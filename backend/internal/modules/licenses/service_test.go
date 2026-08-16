@@ -82,6 +82,22 @@ func TestUpdateWithoutNewKeyPreservesEncryptedKey(t *testing.T) {
 	}
 }
 
+func TestRevealKeyDecryptsStoredValue(t *testing.T) {
+	service, _, _, product := newLicenseTestService(t)
+	created, err := service.Create(context.Background(), validInput(product.ID))
+	if err != nil {
+		t.Fatalf("create license: %v", err)
+	}
+
+	plaintext, err := service.RevealKey(context.Background(), created.ID)
+	if err != nil {
+		t.Fatalf("reveal license key: %v", err)
+	}
+	if plaintext != "SECRET-LICENSE-KEY-1234567890" {
+		t.Fatalf("unexpected plaintext key %q", plaintext)
+	}
+}
+
 func TestListMarksExpiredLicense(t *testing.T) {
 	service, _, _, product := newLicenseTestService(t)
 	service.now = func() time.Time { return time.Date(2026, 8, 17, 0, 0, 0, 0, time.UTC) }

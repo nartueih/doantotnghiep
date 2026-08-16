@@ -30,6 +30,7 @@ var (
 	ErrInvalidCost         = errors.New("cost cannot be negative and requires a three-letter currency")
 	ErrSeatCountBelowUsage = errors.New("seat count cannot be lower than the number of active assignments")
 	ErrNoAvailableSeats    = errors.New("license has no available seats")
+	ErrKeyNotSet           = errors.New("license key is not configured")
 )
 
 type License struct {

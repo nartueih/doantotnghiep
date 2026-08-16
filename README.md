@@ -35,6 +35,8 @@ Luồng sử dụng seat, cấp phát và thu hồi license nằm trong [hướn
 
 Danh mục phòng ban và liên kết người dùng nằm trong [hướng dẫn department management](docs/department-management-testing.md).
 
+Nhật ký thao tác và quy tắc bảo vệ dữ liệu nhạy cảm nằm trong [hướng dẫn Audit Log](docs/audit-log-testing.md).
+
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
 
 ```powershell

@@ -5,22 +5,29 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
 )
 
 type HTTPHandler struct {
 	service *Service
 	auth    *auth.HTTPHandler
+	audit   audit.Recorder
 }
 
-func NewHTTPHandler(service *Service, authHandler *auth.HTTPHandler) *HTTPHandler {
-	return &HTTPHandler{service: service, auth: authHandler}
+func NewHTTPHandler(service *Service, authHandler *auth.HTTPHandler, recorders ...audit.Recorder) *HTTPHandler {
+	handler := &HTTPHandler{service: service, auth: authHandler}
+	if len(recorders) > 0 {
+		handler.audit = recorders[0]
+	}
+	return handler
 }
 
 func (h *HTTPHandler) RegisterRoutes(v1 *gin.RouterGroup) {
 	routes := v1.Group("/licenses")
 	routes.Use(h.auth.Authenticate(), h.auth.RequireRoles(auth.RoleAdmin, auth.RoleITManager))
 	routes.GET("", h.list)
+	routes.GET("/:id/key", h.revealKey)
 	routes.POST("", h.create)
 	routes.PUT("/:id", h.update)
 }
@@ -44,6 +51,13 @@ func (h *HTTPHandler) create(c *gin.Context) {
 		writeLicenseError(c, err)
 		return
 	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionCreate, audit.EntityLicense, item.ID, map[string]any{
+		"name": item.Name, "software_product_id": item.SoftwareProductID, "seat_count": item.SeatCount,
+		"key_configured": item.KeyHint != "",
+	}); err != nil {
+		audit.WriteError(c)
+		return
+	}
 	c.JSON(http.StatusCreated, item)
 }
 
@@ -57,7 +71,27 @@ func (h *HTTPHandler) update(c *gin.Context) {
 		writeLicenseError(c, err)
 		return
 	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionUpdate, audit.EntityLicense, item.ID, map[string]any{
+		"name": item.Name, "software_product_id": item.SoftwareProductID, "seat_count": item.SeatCount,
+		"key_changed": input.LicenseKey != "",
+	}); err != nil {
+		audit.WriteError(c)
+		return
+	}
 	c.JSON(http.StatusOK, item)
+}
+
+func (h *HTTPHandler) revealKey(c *gin.Context) {
+	licenseKey, err := h.service.RevealKey(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		writeLicenseError(c, err)
+		return
+	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionViewKey, audit.EntityLicense, c.Param("id"), nil); err != nil {
+		audit.WriteError(c)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"license_key": licenseKey})
 }
 
 func bindLicenseInput(c *gin.Context) (Input, bool) {
@@ -108,7 +142,7 @@ func writeLicenseError(c *gin.Context, err error) {
 		errors.Is(err, ErrInvalidDateRange),
 		errors.Is(err, ErrInvalidCost):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	case errors.Is(err, ErrSoftwareNotFound), errors.Is(err, ErrNotFound):
+	case errors.Is(err, ErrSoftwareNotFound), errors.Is(err, ErrNotFound), errors.Is(err, ErrKeyNotSet):
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 	case errors.Is(err, ErrSeatCountBelowUsage):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})

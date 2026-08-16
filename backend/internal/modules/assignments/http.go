@@ -5,16 +5,22 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
 )
 
 type HTTPHandler struct {
 	service *Service
 	auth    *auth.HTTPHandler
+	audit   audit.Recorder
 }
 
-func NewHTTPHandler(service *Service, authHandler *auth.HTTPHandler) *HTTPHandler {
-	return &HTTPHandler{service: service, auth: authHandler}
+func NewHTTPHandler(service *Service, authHandler *auth.HTTPHandler, recorders ...audit.Recorder) *HTTPHandler {
+	handler := &HTTPHandler{service: service, auth: authHandler}
+	if len(recorders) > 0 {
+		handler.audit = recorders[0]
+	}
+	return handler
 }
 
 func (h *HTTPHandler) RegisterRoutes(v1 *gin.RouterGroup) {
@@ -55,6 +61,12 @@ func (h *HTTPHandler) create(c *gin.Context) {
 		writeAssignmentError(c, err)
 		return
 	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionAssign, audit.EntityAssignment, item.ID, map[string]any{
+		"license_id": item.LicenseID, "user_id": item.UserID, "device_id": item.DeviceID,
+	}); err != nil {
+		audit.WriteError(c)
+		return
+	}
 	c.JSON(http.StatusCreated, item)
 }
 
@@ -62,6 +74,12 @@ func (h *HTTPHandler) revoke(c *gin.Context) {
 	item, err := h.service.Revoke(c.Request.Context(), auth.CurrentUserID(c), c.Param("id"))
 	if err != nil {
 		writeAssignmentError(c, err)
+		return
+	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionRevoke, audit.EntityAssignment, item.ID, map[string]any{
+		"license_id": item.LicenseID,
+	}); err != nil {
+		audit.WriteError(c)
 		return
 	}
 	c.JSON(http.StatusOK, item)

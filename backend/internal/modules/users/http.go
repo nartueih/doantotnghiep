@@ -5,16 +5,22 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
 )
 
 type HTTPHandler struct {
 	service *Service
 	auth    *auth.HTTPHandler
+	audit   audit.Recorder
 }
 
-func NewHTTPHandler(service *Service, authHandler *auth.HTTPHandler) *HTTPHandler {
-	return &HTTPHandler{service: service, auth: authHandler}
+func NewHTTPHandler(service *Service, authHandler *auth.HTTPHandler, recorders ...audit.Recorder) *HTTPHandler {
+	handler := &HTTPHandler{service: service, auth: authHandler}
+	if len(recorders) > 0 {
+		handler.audit = recorders[0]
+	}
+	return handler
 }
 
 func (h *HTTPHandler) RegisterRoutes(v1 *gin.RouterGroup) {
@@ -60,6 +66,12 @@ func (h *HTTPHandler) create(c *gin.Context) {
 		writeUserError(c, err)
 		return
 	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionCreate, audit.EntityUser, user.ID, map[string]any{
+		"email": user.Email, "role": user.Role, "department_id": user.DepartmentID,
+	}); err != nil {
+		audit.WriteError(c)
+		return
+	}
 	c.JSON(http.StatusCreated, user)
 }
 
@@ -80,6 +92,12 @@ func (h *HTTPHandler) updateStatus(c *gin.Context) {
 	)
 	if err != nil {
 		writeUserError(c, err)
+		return
+	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionStatusChange, audit.EntityUser, user.ID, map[string]any{
+		"status": user.Status,
+	}); err != nil {
+		audit.WriteError(c)
 		return
 	}
 	c.JSON(http.StatusOK, user)

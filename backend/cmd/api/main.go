@@ -13,6 +13,7 @@ import (
 	"license-manager/backend/internal/config"
 	"license-manager/backend/internal/httpapi"
 	"license-manager/backend/internal/modules/assignments"
+	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
 	"license-manager/backend/internal/modules/departments"
 	"license-manager/backend/internal/modules/devices"
@@ -49,6 +50,7 @@ func main() {
 
 	passwordHasher := auth.NewPasswordHasher(12)
 	var authRepository auth.Repository
+	var auditRepository audit.Repository
 	var usersRepository users.Repository
 	var departmentRepository departments.Repository
 	var softwareRepository software.Repository
@@ -76,6 +78,7 @@ func main() {
 			CreatedAt:    time.Now().UTC(),
 		}})
 		authRepository = memoryRepository
+		auditRepository = audit.NewMemoryRepository()
 		usersRepository = memoryRepository
 		departmentRepository = departments.NewMemoryRepository()
 		softwareRepository = software.NewMemoryRepository()
@@ -96,6 +99,7 @@ func main() {
 		}
 		postgresRepository := auth.NewPostgresRepository(pool)
 		authRepository = postgresRepository
+		auditRepository = audit.NewPostgresRepository(pool)
 		usersRepository = postgresRepository
 		departmentRepository = departments.NewPostgresRepository(pool)
 		softwareRepository = software.NewPostgresRepository(pool)
@@ -109,22 +113,24 @@ func main() {
 
 	authService := auth.NewService(authRepository, passwordHasher, tokenManager)
 	authHandler := auth.NewHTTPHandler(authService, tokenManager)
+	auditService := audit.NewService(auditRepository, authRepository)
+	auditHandler := audit.NewHTTPHandler(auditService, authHandler)
 	usersService := users.NewService(usersRepository, passwordHasher, departmentRepository)
-	usersHandler := users.NewHTTPHandler(usersService, authHandler)
+	usersHandler := users.NewHTTPHandler(usersService, authHandler, auditService)
 	departmentService := departments.NewService(departmentRepository)
-	departmentHandler := departments.NewHTTPHandler(departmentService, authHandler)
+	departmentHandler := departments.NewHTTPHandler(departmentService, authHandler, auditService)
 	softwareService := software.NewService(softwareRepository)
-	softwareHandler := software.NewHTTPHandler(softwareService, authHandler)
+	softwareHandler := software.NewHTTPHandler(softwareService, authHandler, auditService)
 	licenseService := licenses.NewService(licenseRepository, softwareRepository, licenseCipher)
-	licenseHandler := licenses.NewHTTPHandler(licenseService, authHandler)
+	licenseHandler := licenses.NewHTTPHandler(licenseService, authHandler, auditService)
 	deviceService := devices.NewService(deviceRepository, authRepository)
-	deviceHandler := devices.NewHTTPHandler(deviceService, authHandler)
+	deviceHandler := devices.NewHTTPHandler(deviceService, authHandler, auditService)
 	assignmentService := assignments.NewService(assignmentRepository, licenseRepository, authRepository, deviceRepository)
-	assignmentHandler := assignments.NewHTTPHandler(assignmentService, authHandler)
+	assignmentHandler := assignments.NewHTTPHandler(assignmentService, authHandler, auditService)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, auditHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
