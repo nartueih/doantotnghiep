@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/licenses"
 	"license-manager/backend/internal/modules/software"
 	"license-manager/backend/internal/modules/users"
 )
@@ -18,6 +19,7 @@ func NewRouter(
 	authHandler *auth.HTTPHandler,
 	usersHandler *users.HTTPHandler,
 	softwareHandler *software.HTTPHandler,
+	licenseHandler *licenses.HTTPHandler,
 ) http.Handler {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
@@ -52,6 +54,9 @@ func NewRouter(
 	}
 	if softwareHandler != nil {
 		softwareHandler.RegisterRoutes(v1)
+	}
+	if licenseHandler != nil {
+		licenseHandler.RegisterRoutes(v1)
 	}
 
 	return router

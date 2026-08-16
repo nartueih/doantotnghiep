@@ -33,6 +33,16 @@ func (r *MemoryRepository) List(_ context.Context) ([]Product, error) {
 	return products, nil
 }
 
+func (r *MemoryRepository) FindByID(_ context.Context, productID string) (Product, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	product, exists := r.products[productID]
+	if !exists {
+		return Product{}, ErrNotFound
+	}
+	return product, nil
+}
+
 func (r *MemoryRepository) Create(_ context.Context, product Product) (Product, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
