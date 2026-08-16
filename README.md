@@ -23,6 +23,8 @@ Hệ thống quản lý thiết bị và giấy phép phần mềm trong doanh n
 
 Nếu chưa có Docker hoặc database, làm lần lượt theo [hướng dẫn chạy không Docker](docs/getting-started-without-docker.md).
 
+Sau khi kiểm tra Authentication, tiếp tục với [hướng dẫn kiểm tra quản lý người dùng](docs/user-management-testing.md).
+
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
 
 ```powershell

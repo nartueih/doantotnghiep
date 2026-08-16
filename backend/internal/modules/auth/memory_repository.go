@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -78,4 +79,49 @@ func (r *MemoryRepository) RevokeRefreshSession(_ context.Context, tokenHash str
 	}
 	delete(r.sessions, tokenHash)
 	return nil
+}
+
+func (r *MemoryRepository) ListUsers(_ context.Context) ([]User, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	users := make([]User, 0, len(r.users))
+	for _, user := range r.users {
+		users = append(users, user)
+	}
+	sort.Slice(users, func(i, j int) bool {
+		return users[i].CreatedAt.Before(users[j].CreatedAt)
+	})
+	return users, nil
+}
+
+func (r *MemoryRepository) CreateUser(_ context.Context, user User) (User, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	normalizedEmail := strings.ToLower(user.Email)
+	if _, exists := r.byEmail[normalizedEmail]; exists {
+		return User{}, ErrEmailAlreadyExists
+	}
+	for _, existing := range r.users {
+		if strings.EqualFold(existing.EmployeeCode, user.EmployeeCode) {
+			return User{}, ErrCodeAlreadyExists
+		}
+	}
+	r.users[user.ID] = user
+	r.byEmail[normalizedEmail] = user.ID
+	return user, nil
+}
+
+func (r *MemoryRepository) UpdateUserStatus(_ context.Context, userID, status string) (User, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	user, exists := r.users[userID]
+	if !exists {
+		return User{}, ErrUserNotFound
+	}
+	user.Status = status
+	r.users[userID] = user
+	return user, nil
 }

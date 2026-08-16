@@ -11,6 +11,8 @@ var (
 	ErrAccountLocked       = errors.New("account is locked")
 	ErrInvalidToken        = errors.New("invalid token")
 	ErrInvalidRefreshToken = errors.New("invalid or already used refresh token")
+	ErrEmailAlreadyExists  = errors.New("email already exists")
+	ErrCodeAlreadyExists   = errors.New("employee code already exists")
 )
 
 type Repository interface {

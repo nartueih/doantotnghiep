@@ -9,6 +9,7 @@ import (
 )
 
 const userIDContextKey = "authenticated_user_id"
+const userRoleContextKey = "authenticated_user_role"
 
 type HTTPHandler struct {
 	service *Service
@@ -24,7 +25,7 @@ func (h *HTTPHandler) RegisterRoutes(v1 *gin.RouterGroup) {
 	routes.POST("/login", h.login)
 	routes.POST("/refresh", h.refresh)
 	routes.POST("/logout", h.logout)
-	routes.GET("/me", h.authenticate(), h.me)
+	routes.GET("/me", h.Authenticate(), h.me)
 }
 
 func (h *HTTPHandler) login(c *gin.Context) {
@@ -82,7 +83,7 @@ func (h *HTTPHandler) me(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-func (h *HTTPHandler) authenticate() gin.HandlerFunc {
+func (h *HTTPHandler) Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		scheme, rawToken, found := strings.Cut(header, " ")
@@ -97,8 +98,35 @@ func (h *HTTPHandler) authenticate() gin.HandlerFunc {
 			return
 		}
 		c.Set(userIDContextKey, claims.Subject)
+		c.Set(userRoleContextKey, claims.Role)
 		c.Next()
 	}
+}
+
+func (h *HTTPHandler) RequireRoles(allowedRoles ...string) gin.HandlerFunc {
+	allowed := make(map[string]struct{}, len(allowedRoles))
+	for _, role := range allowedRoles {
+		allowed[role] = struct{}{}
+	}
+
+	return func(c *gin.Context) {
+		role, exists := c.Get(userRoleContextKey)
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication is required"})
+			return
+		}
+		if _, ok := allowed[role.(string)]; !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "you do not have permission to perform this action"})
+			return
+		}
+		c.Next()
+	}
+}
+
+func CurrentUserID(c *gin.Context) string {
+	userID, _ := c.Get(userIDContextKey)
+	value, _ := userID.(string)
+	return value
 }
 
 func bindRefreshToken(c *gin.Context) (string, bool) {
