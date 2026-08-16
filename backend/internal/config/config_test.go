@@ -6,6 +6,7 @@ func TestLoadRequiresDatabaseURLForPostgres(t *testing.T) {
 	t.Setenv("STORAGE_DRIVER", "postgres")
 	t.Setenv("DATABASE_URL", "")
 	t.Setenv("JWT_SECRET", "01234567890123456789012345678901")
+	t.Setenv("LICENSE_ENCRYPTION_KEY", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
 
 	_, err := Load()
 	if err == nil {
@@ -17,6 +18,7 @@ func TestLoadUsesDefaults(t *testing.T) {
 	t.Setenv("STORAGE_DRIVER", "memory")
 	t.Setenv("DATABASE_URL", "")
 	t.Setenv("JWT_SECRET", "01234567890123456789012345678901")
+	t.Setenv("LICENSE_ENCRYPTION_KEY", "")
 	t.Setenv("APP_ENV", "")
 	t.Setenv("HTTP_ADDRESS", "")
 	t.Setenv("SHUTDOWN_TIMEOUT", "")
@@ -41,6 +43,7 @@ func TestLoadRejectsMemoryStorageInProduction(t *testing.T) {
 	t.Setenv("APP_ENV", "production")
 	t.Setenv("STORAGE_DRIVER", "memory")
 	t.Setenv("JWT_SECRET", "01234567890123456789012345678901")
+	t.Setenv("LICENSE_ENCRYPTION_KEY", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
 
 	_, err := Load()
 	if err == nil {

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -8,17 +9,18 @@ import (
 )
 
 type Config struct {
-	AppEnv           string
-	HTTPAddress      string
-	StorageDriver    string
-	DatabaseURL      string
-	ShutdownTimeout  time.Duration
-	JWTSecret        string
-	JWTIssuer        string
-	AccessTokenTTL   time.Duration
-	RefreshTokenTTL  time.Duration
-	DevAdminEmail    string
-	DevAdminPassword string
+	AppEnv               string
+	HTTPAddress          string
+	StorageDriver        string
+	DatabaseURL          string
+	ShutdownTimeout      time.Duration
+	JWTSecret            string
+	JWTIssuer            string
+	AccessTokenTTL       time.Duration
+	RefreshTokenTTL      time.Duration
+	DevAdminEmail        string
+	DevAdminPassword     string
+	LicenseEncryptionKey string
 }
 
 func Load() (Config, error) {
@@ -54,18 +56,28 @@ func Load() (Config, error) {
 		return Config{}, errors.New("JWT_SECRET must contain at least 32 characters")
 	}
 
+	licenseEncryptionKey := os.Getenv("LICENSE_ENCRYPTION_KEY")
+	if licenseEncryptionKey == "" && storageDriver == "memory" && appEnv == "development" {
+		licenseEncryptionKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+	}
+	decodedKey, err := base64.StdEncoding.DecodeString(licenseEncryptionKey)
+	if err != nil || len(decodedKey) != 32 {
+		return Config{}, errors.New("LICENSE_ENCRYPTION_KEY must be a base64-encoded 32-byte key")
+	}
+
 	return Config{
-		AppEnv:           appEnv,
-		HTTPAddress:      valueOrDefault("HTTP_ADDRESS", ":8080"),
-		StorageDriver:    storageDriver,
-		DatabaseURL:      databaseURL,
-		ShutdownTimeout:  shutdownTimeout,
-		JWTSecret:        jwtSecret,
-		JWTIssuer:        valueOrDefault("JWT_ISSUER", "license-manager"),
-		AccessTokenTTL:   accessTTL,
-		RefreshTokenTTL:  refreshTTL,
-		DevAdminEmail:    valueOrDefault("DEV_ADMIN_EMAIL", "admin@local.test"),
-		DevAdminPassword: valueOrDefault("DEV_ADMIN_PASSWORD", "ChangeMe123!"),
+		AppEnv:               appEnv,
+		HTTPAddress:          valueOrDefault("HTTP_ADDRESS", ":8080"),
+		StorageDriver:        storageDriver,
+		DatabaseURL:          databaseURL,
+		ShutdownTimeout:      shutdownTimeout,
+		JWTSecret:            jwtSecret,
+		JWTIssuer:            valueOrDefault("JWT_ISSUER", "license-manager"),
+		AccessTokenTTL:       accessTTL,
+		RefreshTokenTTL:      refreshTTL,
+		DevAdminEmail:        valueOrDefault("DEV_ADMIN_EMAIL", "admin@local.test"),
+		DevAdminPassword:     valueOrDefault("DEV_ADMIN_PASSWORD", "ChangeMe123!"),
+		LicenseEncryptionKey: licenseEncryptionKey,
 	}, nil
 }
 

@@ -24,6 +24,7 @@ type Product struct {
 
 type Repository interface {
 	List(context.Context) ([]Product, error)
+	FindByID(context.Context, string) (Product, error)
 	Create(context.Context, Product) (Product, error)
 	Update(context.Context, Product) (Product, error)
 }

@@ -13,9 +13,11 @@ import (
 	"license-manager/backend/internal/config"
 	"license-manager/backend/internal/httpapi"
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/licenses"
 	"license-manager/backend/internal/modules/software"
 	"license-manager/backend/internal/modules/users"
 	"license-manager/backend/internal/platform/database"
+	"license-manager/backend/internal/platform/securevalue"
 )
 
 func main() {
@@ -23,6 +25,11 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		logger.Error("invalid configuration", "error", err)
+		os.Exit(1)
+	}
+	licenseCipher, err := securevalue.NewCipher(cfg.LicenseEncryptionKey)
+	if err != nil {
+		logger.Error("cannot initialize license encryption", "error", err)
 		os.Exit(1)
 	}
 
@@ -41,6 +48,7 @@ func main() {
 	var authRepository auth.Repository
 	var usersRepository users.Repository
 	var softwareRepository software.Repository
+	var licenseRepository licenses.Repository
 	var ping httpapi.PingFunc
 	cleanup := func() {}
 
@@ -64,6 +72,7 @@ func main() {
 		authRepository = memoryRepository
 		usersRepository = memoryRepository
 		softwareRepository = software.NewMemoryRepository()
+		licenseRepository = licenses.NewMemoryRepository()
 		ping = func(context.Context) error { return nil }
 		logger.Warn("using temporary in-memory storage; data will be lost on shutdown", "admin_email", cfg.DevAdminEmail)
 	case "postgres":
@@ -79,6 +88,7 @@ func main() {
 		authRepository = postgresRepository
 		usersRepository = postgresRepository
 		softwareRepository = software.NewPostgresRepository(pool)
+		licenseRepository = licenses.NewPostgresRepository(pool)
 		ping = pool.Ping
 		cleanup = pool.Close
 	}
@@ -90,10 +100,12 @@ func main() {
 	usersHandler := users.NewHTTPHandler(usersService, authHandler)
 	softwareService := software.NewService(softwareRepository)
 	softwareHandler := software.NewHTTPHandler(softwareService, authHandler)
+	licenseService := licenses.NewService(licenseRepository, softwareRepository, licenseCipher)
+	licenseHandler := licenses.NewHTTPHandler(licenseService, authHandler)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, softwareHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, softwareHandler, licenseHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

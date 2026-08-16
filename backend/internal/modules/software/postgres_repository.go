@@ -50,6 +50,29 @@ func (r *PostgresRepository) List(ctx context.Context) ([]Product, error) {
 	return products, nil
 }
 
+func (r *PostgresRepository) FindByID(ctx context.Context, productID string) (Product, error) {
+	var product Product
+	err := r.pool.QueryRow(ctx, `
+		SELECT id::text, name, publisher, version, description, created_at, updated_at
+		FROM software_products
+		WHERE id = $1`, productID).Scan(
+		&product.ID,
+		&product.Name,
+		&product.Publisher,
+		&product.Version,
+		&product.Description,
+		&product.CreatedAt,
+		&product.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Product{}, ErrNotFound
+	}
+	if err != nil {
+		return Product{}, fmt.Errorf("find software product: %w", err)
+	}
+	return product, nil
+}
+
 func (r *PostgresRepository) Create(ctx context.Context, product Product) (Product, error) {
 	return r.save(ctx, `
 		INSERT INTO software_products (id, name, publisher, version, description)

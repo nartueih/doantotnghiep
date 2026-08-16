@@ -27,6 +27,8 @@ Sau khi kiểm tra Authentication, tiếp tục với [hướng dẫn kiểm tra
 
 Danh mục sản phẩm phần mềm được kiểm tra theo [hướng dẫn software catalog](docs/software-catalog-testing.md).
 
+Quy tắc và mã hóa license được kiểm tra theo [hướng dẫn license management](docs/license-management-testing.md).
+
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
 
 ```powershell
