@@ -29,6 +29,8 @@ Danh mục sản phẩm phần mềm được kiểm tra theo [hướng dẫn so
 
 Quy tắc và mã hóa license được kiểm tra theo [hướng dẫn license management](docs/license-management-testing.md).
 
+Quy trình tạo, bàn giao và thu hồi thiết bị nằm trong [hướng dẫn device management](docs/device-management-testing.md).
+
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
 
 ```powershell
