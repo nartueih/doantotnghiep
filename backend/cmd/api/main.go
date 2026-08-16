@@ -1,0 +1,117 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"license-manager/backend/internal/config"
+	"license-manager/backend/internal/httpapi"
+	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/platform/database"
+)
+
+func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	cfg, err := config.Load()
+	if err != nil {
+		logger.Error("invalid configuration", "error", err)
+		os.Exit(1)
+	}
+
+	tokenManager, err := auth.NewTokenManager(
+		cfg.JWTSecret,
+		cfg.JWTIssuer,
+		cfg.AccessTokenTTL,
+		cfg.RefreshTokenTTL,
+	)
+	if err != nil {
+		logger.Error("cannot initialize token manager", "error", err)
+		os.Exit(1)
+	}
+
+	passwordHasher := auth.NewPasswordHasher(12)
+	var authRepository auth.Repository
+	var ping httpapi.PingFunc
+	cleanup := func() {}
+
+	switch cfg.StorageDriver {
+	case "memory":
+		passwordHash, hashErr := passwordHasher.Hash(cfg.DevAdminPassword)
+		if hashErr != nil {
+			logger.Error("cannot create development admin", "error", hashErr)
+			os.Exit(1)
+		}
+		authRepository = auth.NewMemoryRepository([]auth.User{{
+			ID:           "00000000-0000-0000-0000-000000000001",
+			Email:        cfg.DevAdminEmail,
+			PasswordHash: passwordHash,
+			FullName:     "Development Admin",
+			EmployeeCode: "DEV-ADMIN",
+			Role:         auth.RoleAdmin,
+			Status:       auth.StatusActive,
+			CreatedAt:    time.Now().UTC(),
+		}})
+		ping = func(context.Context) error { return nil }
+		logger.Warn("using temporary in-memory storage; data will be lost on shutdown", "admin_email", cfg.DevAdminEmail)
+	case "postgres":
+		startupCtx, cancelStartup := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancelStartup()
+
+		pool, openErr := database.Open(startupCtx, cfg.DatabaseURL)
+		if openErr != nil {
+			logger.Error("cannot connect to database", "error", openErr)
+			os.Exit(1)
+		}
+		authRepository = auth.NewPostgresRepository(pool)
+		ping = pool.Ping
+		cleanup = pool.Close
+	}
+	defer cleanup()
+
+	authService := auth.NewService(authRepository, passwordHasher, tokenManager)
+	authHandler := auth.NewHTTPHandler(authService, tokenManager)
+
+	server := &http.Server{
+		Addr:              cfg.HTTPAddress,
+		Handler:           httpapi.NewRouter(ping, authHandler),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	serverErrors := make(chan error, 1)
+	go func() {
+		logger.Info("http server started", "address", cfg.HTTPAddress, "environment", cfg.AppEnv, "storage", cfg.StorageDriver)
+		serverErrors <- server.ListenAndServe()
+	}()
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case sig := <-signals:
+		logger.Info("shutdown signal received", "signal", sig.String())
+	case err := <-serverErrors:
+		if !errors.Is(err, http.ErrServerClosed) {
+			logger.Error("http server stopped unexpectedly", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+	defer cancelShutdown()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.Error("graceful shutdown failed", "error", err)
+		os.Exit(1)
+	}
+
+	logger.Info("http server stopped")
+}

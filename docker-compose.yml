@@ -1,0 +1,23 @@
+name: license-manager
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: license-manager-postgres
+    environment:
+      POSTGRES_DB: license_manager
+      POSTGRES_USER: license_admin
+      POSTGRES_PASSWORD: license_admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U license_admin -d license_manager"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:

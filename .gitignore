@@ -1,0 +1,9 @@
+.env
+backend/.env
+backend/bin/
+backend/coverage.out
+*.log
+.idea/
+.vscode/
+postgres_data/
+
