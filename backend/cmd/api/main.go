@@ -15,6 +15,7 @@ import (
 	"license-manager/backend/internal/modules/assignments"
 	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/dashboard"
 	"license-manager/backend/internal/modules/departments"
 	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenses"
@@ -115,6 +116,8 @@ func main() {
 	authHandler := auth.NewHTTPHandler(authService, tokenManager)
 	auditService := audit.NewService(auditRepository, authRepository)
 	auditHandler := audit.NewHTTPHandler(auditService, authHandler)
+	dashboardService := dashboard.NewService(licenseRepository, deviceRepository, softwareRepository)
+	dashboardHandler := dashboard.NewHTTPHandler(dashboardService, authHandler)
 	usersService := users.NewService(usersRepository, passwordHasher, departmentRepository)
 	usersHandler := users.NewHTTPHandler(usersService, authHandler, auditService)
 	departmentService := departments.NewService(departmentRepository)
@@ -130,7 +133,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, auditHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, auditHandler, dashboardHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
