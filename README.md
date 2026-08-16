@@ -25,6 +25,8 @@ Nếu chưa có Docker hoặc database, làm lần lượt theo [hướng dẫn 
 
 Sau khi kiểm tra Authentication, tiếp tục với [hướng dẫn kiểm tra quản lý người dùng](docs/user-management-testing.md).
 
+Danh mục sản phẩm phần mềm được kiểm tra theo [hướng dẫn software catalog](docs/software-catalog-testing.md).
+
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
 
 ```powershell

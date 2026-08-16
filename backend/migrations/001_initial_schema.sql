@@ -57,12 +57,14 @@ CREATE TABLE software_products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(150) NOT NULL,
     publisher VARCHAR(150) NOT NULL,
-    version VARCHAR(80),
-    description TEXT,
+    version VARCHAR(80) NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (name, publisher, version)
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX uq_software_product_identity
+    ON software_products (LOWER(name), LOWER(publisher), LOWER(version));
 
 CREATE TABLE licenses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
