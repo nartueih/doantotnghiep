@@ -13,6 +13,7 @@ import (
 	"license-manager/backend/internal/config"
 	"license-manager/backend/internal/httpapi"
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/software"
 	"license-manager/backend/internal/modules/users"
 	"license-manager/backend/internal/platform/database"
 )
@@ -39,6 +40,7 @@ func main() {
 	passwordHasher := auth.NewPasswordHasher(12)
 	var authRepository auth.Repository
 	var usersRepository users.Repository
+	var softwareRepository software.Repository
 	var ping httpapi.PingFunc
 	cleanup := func() {}
 
@@ -61,6 +63,7 @@ func main() {
 		}})
 		authRepository = memoryRepository
 		usersRepository = memoryRepository
+		softwareRepository = software.NewMemoryRepository()
 		ping = func(context.Context) error { return nil }
 		logger.Warn("using temporary in-memory storage; data will be lost on shutdown", "admin_email", cfg.DevAdminEmail)
 	case "postgres":
@@ -75,6 +78,7 @@ func main() {
 		postgresRepository := auth.NewPostgresRepository(pool)
 		authRepository = postgresRepository
 		usersRepository = postgresRepository
+		softwareRepository = software.NewPostgresRepository(pool)
 		ping = pool.Ping
 		cleanup = pool.Close
 	}
@@ -84,10 +88,12 @@ func main() {
 	authHandler := auth.NewHTTPHandler(authService, tokenManager)
 	usersService := users.NewService(usersRepository, passwordHasher)
 	usersHandler := users.NewHTTPHandler(usersService, authHandler)
+	softwareService := software.NewService(softwareRepository)
+	softwareHandler := software.NewHTTPHandler(softwareService, authHandler)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, softwareHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

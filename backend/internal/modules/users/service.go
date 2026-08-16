@@ -2,7 +2,6 @@ package users
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"unicode"
 
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/platform/id"
 )
 
 var (
@@ -67,7 +67,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (auth.User, err
 	if err != nil {
 		return auth.User{}, fmt.Errorf("hash password: %w", err)
 	}
-	userID, err := randomUUID()
+	userID, err := id.NewUUID()
 	if err != nil {
 		return auth.User{}, fmt.Errorf("generate user id: %w", err)
 	}
@@ -109,15 +109,4 @@ func strongPassword(password string) bool {
 		digit = digit || unicode.IsDigit(character)
 	}
 	return upper && lower && digit
-}
-
-func randomUUID() (string, error) {
-	value := make([]byte, 16)
-	if _, err := rand.Read(value); err != nil {
-		return "", err
-	}
-	value[6] = (value[6] & 0x0f) | 0x40
-	value[8] = (value[8] & 0x3f) | 0x80
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
-		value[0:4], value[4:6], value[6:8], value[8:10], value[10:16]), nil
 }
