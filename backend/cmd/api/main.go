@@ -12,6 +12,7 @@ import (
 
 	"license-manager/backend/internal/config"
 	"license-manager/backend/internal/httpapi"
+	"license-manager/backend/internal/modules/assignments"
 	"license-manager/backend/internal/modules/auth"
 	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenses"
@@ -51,6 +52,7 @@ func main() {
 	var softwareRepository software.Repository
 	var licenseRepository licenses.Repository
 	var deviceRepository devices.Repository
+	var assignmentRepository assignments.Repository
 	var ping httpapi.PingFunc
 	cleanup := func() {}
 
@@ -74,8 +76,10 @@ func main() {
 		authRepository = memoryRepository
 		usersRepository = memoryRepository
 		softwareRepository = software.NewMemoryRepository()
-		licenseRepository = licenses.NewMemoryRepository()
+		memoryLicenseRepository := licenses.NewMemoryRepository()
+		licenseRepository = memoryLicenseRepository
 		deviceRepository = devices.NewMemoryRepository()
+		assignmentRepository = assignments.NewMemoryRepository(memoryLicenseRepository)
 		ping = func(context.Context) error { return nil }
 		logger.Warn("using temporary in-memory storage; data will be lost on shutdown", "admin_email", cfg.DevAdminEmail)
 	case "postgres":
@@ -93,6 +97,7 @@ func main() {
 		softwareRepository = software.NewPostgresRepository(pool)
 		licenseRepository = licenses.NewPostgresRepository(pool)
 		deviceRepository = devices.NewPostgresRepository(pool)
+		assignmentRepository = assignments.NewPostgresRepository(pool)
 		ping = pool.Ping
 		cleanup = pool.Close
 	}
@@ -108,10 +113,12 @@ func main() {
 	licenseHandler := licenses.NewHTTPHandler(licenseService, authHandler)
 	deviceService := devices.NewService(deviceRepository, authRepository)
 	deviceHandler := devices.NewHTTPHandler(deviceService, authHandler)
+	assignmentService := assignments.NewService(assignmentRepository, licenseRepository, authRepository, deviceRepository)
+	assignmentHandler := assignments.NewHTTPHandler(assignmentService, authHandler)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, softwareHandler, licenseHandler, deviceHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

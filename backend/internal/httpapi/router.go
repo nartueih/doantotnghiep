@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"license-manager/backend/internal/modules/assignments"
 	"license-manager/backend/internal/modules/auth"
 	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenses"
@@ -22,6 +23,7 @@ func NewRouter(
 	softwareHandler *software.HTTPHandler,
 	licenseHandler *licenses.HTTPHandler,
 	deviceHandler *devices.HTTPHandler,
+	assignmentHandler *assignments.HTTPHandler,
 ) http.Handler {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
@@ -62,6 +64,9 @@ func NewRouter(
 	}
 	if deviceHandler != nil {
 		deviceHandler.RegisterRoutes(v1)
+	}
+	if assignmentHandler != nil {
+		assignmentHandler.RegisterRoutes(v1)
 	}
 
 	return router
