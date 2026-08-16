@@ -31,6 +31,8 @@ Quy tắc và mã hóa license được kiểm tra theo [hướng dẫn license 
 
 Quy trình tạo, bàn giao và thu hồi thiết bị nằm trong [hướng dẫn device management](docs/device-management-testing.md).
 
+Luồng sử dụng seat, cấp phát và thu hồi license nằm trong [hướng dẫn license assignment](docs/license-assignment-testing.md).
+
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
 
 ```powershell

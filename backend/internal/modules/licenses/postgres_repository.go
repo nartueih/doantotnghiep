@@ -48,6 +48,27 @@ func (r *PostgresRepository) List(ctx context.Context) ([]License, error) {
 	return items, nil
 }
 
+func (r *PostgresRepository) FindByID(ctx context.Context, licenseID string) (License, error) {
+	item, err := scanLicense(r.pool.QueryRow(ctx, `
+		SELECT l.id::text, l.software_product_id::text, l.name, l.license_type,
+		       l.assignment_type, l.seat_count, COUNT(a.id)::int,
+		       l.encrypted_key, COALESCE(l.key_hint, ''), COALESCE(l.vendor, ''),
+		       COALESCE(l.purchased_at::text, ''), COALESCE(l.starts_at::text, ''),
+		       COALESCE(l.expires_at::text, ''), COALESCE(l.cost, 0)::float8,
+		       COALESCE(l.currency, ''), COALESCE(l.notes, ''), l.created_at, l.updated_at
+		FROM licenses l
+		LEFT JOIN license_assignments a ON a.license_id = l.id AND a.status = 'active'
+		WHERE l.id = $1
+		GROUP BY l.id`, licenseID))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return License{}, ErrNotFound
+	}
+	if err != nil {
+		return License{}, fmt.Errorf("find license: %w", err)
+	}
+	return item, nil
+}
+
 func (r *PostgresRepository) Create(ctx context.Context, item License) (License, error) {
 	row := r.pool.QueryRow(ctx, `
 		INSERT INTO licenses (

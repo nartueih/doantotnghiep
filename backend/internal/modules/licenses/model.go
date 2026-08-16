@@ -29,6 +29,7 @@ var (
 	ErrInvalidDateRange    = errors.New("expiration date must not be before start date")
 	ErrInvalidCost         = errors.New("cost cannot be negative and requires a three-letter currency")
 	ErrSeatCountBelowUsage = errors.New("seat count cannot be lower than the number of active assignments")
+	ErrNoAvailableSeats    = errors.New("license has no available seats")
 )
 
 type License struct {
@@ -56,6 +57,7 @@ type License struct {
 
 type Repository interface {
 	List(context.Context) ([]License, error)
+	FindByID(context.Context, string) (License, error)
 	Create(context.Context, License) (License, error)
 	Update(context.Context, License) (License, error)
 }

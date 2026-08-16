@@ -26,6 +26,16 @@ func (r *MemoryRepository) List(_ context.Context) ([]License, error) {
 	return items, nil
 }
 
+func (r *MemoryRepository) FindByID(_ context.Context, licenseID string) (License, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	item, exists := r.licenses[licenseID]
+	if !exists {
+		return License{}, ErrNotFound
+	}
+	return clone(item), nil
+}
+
 func (r *MemoryRepository) Create(_ context.Context, item License) (License, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -52,6 +62,34 @@ func (r *MemoryRepository) Update(_ context.Context, item License) (License, err
 	item.AvailableSeats = item.SeatCount - item.UsedSeats
 	r.licenses[item.ID] = clone(item)
 	return clone(item), nil
+}
+
+func (r *MemoryRepository) ReserveSeat(licenseID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	item, exists := r.licenses[licenseID]
+	if !exists {
+		return ErrNotFound
+	}
+	if item.UsedSeats >= item.SeatCount {
+		return ErrNoAvailableSeats
+	}
+	item.UsedSeats++
+	item.AvailableSeats = item.SeatCount - item.UsedSeats
+	r.licenses[licenseID] = item
+	return nil
+}
+
+func (r *MemoryRepository) ReleaseSeat(licenseID string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	item, exists := r.licenses[licenseID]
+	if !exists || item.UsedSeats == 0 {
+		return
+	}
+	item.UsedSeats--
+	item.AvailableSeats = item.SeatCount - item.UsedSeats
+	r.licenses[licenseID] = item
 }
 
 func clone(item License) License {
