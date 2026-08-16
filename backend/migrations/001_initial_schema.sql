@@ -24,8 +24,8 @@ CREATE TABLE users (
 CREATE TABLE devices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     assigned_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    asset_code VARCHAR(80) NOT NULL UNIQUE,
-    serial_number VARCHAR(150) UNIQUE,
+    asset_code VARCHAR(80) NOT NULL,
+    serial_number VARCHAR(150),
     name VARCHAR(150) NOT NULL,
     device_type VARCHAR(50) NOT NULL,
     manufacturer VARCHAR(100),
@@ -37,6 +37,10 @@ CREATE TABLE devices (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX uq_devices_asset_code ON devices (LOWER(asset_code));
+CREATE UNIQUE INDEX uq_devices_serial_number
+    ON devices (LOWER(serial_number)) WHERE serial_number IS NOT NULL;
 
 CREATE TABLE refresh_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

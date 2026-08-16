@@ -13,6 +13,7 @@ import (
 	"license-manager/backend/internal/config"
 	"license-manager/backend/internal/httpapi"
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenses"
 	"license-manager/backend/internal/modules/software"
 	"license-manager/backend/internal/modules/users"
@@ -49,6 +50,7 @@ func main() {
 	var usersRepository users.Repository
 	var softwareRepository software.Repository
 	var licenseRepository licenses.Repository
+	var deviceRepository devices.Repository
 	var ping httpapi.PingFunc
 	cleanup := func() {}
 
@@ -73,6 +75,7 @@ func main() {
 		usersRepository = memoryRepository
 		softwareRepository = software.NewMemoryRepository()
 		licenseRepository = licenses.NewMemoryRepository()
+		deviceRepository = devices.NewMemoryRepository()
 		ping = func(context.Context) error { return nil }
 		logger.Warn("using temporary in-memory storage; data will be lost on shutdown", "admin_email", cfg.DevAdminEmail)
 	case "postgres":
@@ -89,6 +92,7 @@ func main() {
 		usersRepository = postgresRepository
 		softwareRepository = software.NewPostgresRepository(pool)
 		licenseRepository = licenses.NewPostgresRepository(pool)
+		deviceRepository = devices.NewPostgresRepository(pool)
 		ping = pool.Ping
 		cleanup = pool.Close
 	}
@@ -102,10 +106,12 @@ func main() {
 	softwareHandler := software.NewHTTPHandler(softwareService, authHandler)
 	licenseService := licenses.NewService(licenseRepository, softwareRepository, licenseCipher)
 	licenseHandler := licenses.NewHTTPHandler(licenseService, authHandler)
+	deviceService := devices.NewService(deviceRepository, authRepository)
+	deviceHandler := devices.NewHTTPHandler(deviceService, authHandler)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, softwareHandler, licenseHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, softwareHandler, licenseHandler, deviceHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
