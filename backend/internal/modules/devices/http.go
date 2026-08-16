@@ -5,16 +5,22 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
 )
 
 type HTTPHandler struct {
 	service *Service
 	auth    *auth.HTTPHandler
+	audit   audit.Recorder
 }
 
-func NewHTTPHandler(service *Service, authHandler *auth.HTTPHandler) *HTTPHandler {
-	return &HTTPHandler{service: service, auth: authHandler}
+func NewHTTPHandler(service *Service, authHandler *auth.HTTPHandler, recorders ...audit.Recorder) *HTTPHandler {
+	handler := &HTTPHandler{service: service, auth: authHandler}
+	if len(recorders) > 0 {
+		handler.audit = recorders[0]
+	}
+	return handler
 }
 
 func (h *HTTPHandler) RegisterRoutes(v1 *gin.RouterGroup) {
@@ -46,6 +52,12 @@ func (h *HTTPHandler) create(c *gin.Context) {
 		writeDeviceError(c, err)
 		return
 	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionCreate, audit.EntityDevice, item.ID, map[string]any{
+		"asset_code": item.AssetCode, "device_type": item.DeviceType,
+	}); err != nil {
+		audit.WriteError(c)
+		return
+	}
 	c.JSON(http.StatusCreated, item)
 }
 
@@ -57,6 +69,12 @@ func (h *HTTPHandler) update(c *gin.Context) {
 	item, err := h.service.Update(c.Request.Context(), c.Param("id"), input)
 	if err != nil {
 		writeDeviceError(c, err)
+		return
+	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionUpdate, audit.EntityDevice, item.ID, map[string]any{
+		"asset_code": item.AssetCode, "device_type": item.DeviceType,
+	}); err != nil {
+		audit.WriteError(c)
 		return
 	}
 	c.JSON(http.StatusOK, item)
@@ -75,6 +93,12 @@ func (h *HTTPHandler) changeStatus(c *gin.Context) {
 		writeDeviceError(c, err)
 		return
 	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionStatusChange, audit.EntityDevice, item.ID, map[string]any{
+		"status": item.Status,
+	}); err != nil {
+		audit.WriteError(c)
+		return
+	}
 	c.JSON(http.StatusOK, item)
 }
 
@@ -89,6 +113,12 @@ func (h *HTTPHandler) assign(c *gin.Context) {
 	item, err := h.service.Assign(c.Request.Context(), c.Param("id"), request.UserID)
 	if err != nil {
 		writeDeviceError(c, err)
+		return
+	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionAssign, audit.EntityDevice, item.ID, map[string]any{
+		"assigned_user_id": item.AssignedUserID,
+	}); err != nil {
+		audit.WriteError(c)
 		return
 	}
 	c.JSON(http.StatusOK, item)

@@ -9,7 +9,7 @@ import (
 )
 
 func TestLiveHealth(t *testing.T) {
-	router := NewRouter(func(context.Context) error { return nil }, nil, nil, nil, nil, nil, nil, nil)
+	router := NewRouter(func(context.Context) error { return nil }, nil, nil, nil, nil, nil, nil, nil, nil)
 	response := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/health/live", nil)
 
@@ -21,7 +21,7 @@ func TestLiveHealth(t *testing.T) {
 }
 
 func TestReadyHealthWhenDatabaseIsUnavailable(t *testing.T) {
-	router := NewRouter(func(context.Context) error { return errors.New("database unavailable") }, nil, nil, nil, nil, nil, nil, nil)
+	router := NewRouter(func(context.Context) error { return errors.New("database unavailable") }, nil, nil, nil, nil, nil, nil, nil, nil)
 	response := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/health/ready", nil)
 

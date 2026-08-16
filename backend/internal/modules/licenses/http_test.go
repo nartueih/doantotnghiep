@@ -3,6 +3,7 @@ package licenses
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,13 +11,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
 	"license-manager/backend/internal/modules/software"
 	"license-manager/backend/internal/platform/securevalue"
 )
 
 func TestCreateResponseDoesNotExposeLicenseKey(t *testing.T) {
-	router, token, productID := newLicenseHTTPTestRouter(t, auth.RoleAdmin)
+	router, token, productID, _ := newLicenseHTTPTestRouter(t, auth.RoleAdmin)
 	body := `{
 		"software_product_id":"` + productID + `",
 		"name":"Photoshop Teams",
@@ -45,7 +47,7 @@ func TestCreateResponseDoesNotExposeLicenseKey(t *testing.T) {
 }
 
 func TestEmployeeCannotListLicenses(t *testing.T) {
-	router, token, _ := newLicenseHTTPTestRouter(t, auth.RoleEmployee)
+	router, token, _, _ := newLicenseHTTPTestRouter(t, auth.RoleEmployee)
 	response := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/licenses", nil)
 	request.Header.Set("Authorization", "Bearer "+token)
@@ -57,7 +59,48 @@ func TestEmployeeCannotListLicenses(t *testing.T) {
 	}
 }
 
-func newLicenseHTTPTestRouter(t *testing.T, role string) (http.Handler, string, string) {
+func TestRevealKeyCreatesAuditLog(t *testing.T) {
+	router, token, productID, auditService := newLicenseHTTPTestRouter(t, auth.RoleAdmin)
+	createResponse := httptest.NewRecorder()
+	createRequest := httptest.NewRequest(http.MethodPost, "/api/v1/licenses", bytes.NewBufferString(`{
+		"software_product_id":"`+productID+`",
+		"name":"Audited License",
+		"license_type":"subscription",
+		"assignment_type":"user",
+		"seat_count":1,
+		"license_key":"AUDIT-SECRET-1234",
+		"expires_at":"2099-01-01"
+	}`))
+	createRequest.Header.Set("Content-Type", "application/json")
+	createRequest.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(createResponse, createRequest)
+	if createResponse.Code != http.StatusCreated {
+		t.Fatalf("create license: %d: %s", createResponse.Code, createResponse.Body.String())
+	}
+	var created License
+	if err := json.Unmarshal(createResponse.Body.Bytes(), &created); err != nil {
+		t.Fatalf("decode created license: %v", err)
+	}
+
+	revealResponse := httptest.NewRecorder()
+	revealRequest := httptest.NewRequest(http.MethodGet, "/api/v1/licenses/"+created.ID+"/key", nil)
+	revealRequest.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(revealResponse, revealRequest)
+	if revealResponse.Code != http.StatusOK || !strings.Contains(revealResponse.Body.String(), "AUDIT-SECRET-1234") {
+		t.Fatalf("reveal key: %d: %s", revealResponse.Code, revealResponse.Body.String())
+	}
+
+	items, err := auditService.List(context.Background(), audit.Filter{Action: audit.ActionViewKey})
+	if err != nil || len(items) != 1 {
+		t.Fatalf("expected one view_key audit log, got %d (error: %v)", len(items), err)
+	}
+	encodedMetadata, _ := json.Marshal(items[0].Metadata)
+	if strings.Contains(string(encodedMetadata), "AUDIT-SECRET-1234") {
+		t.Fatalf("audit metadata exposed license key: %s", encodedMetadata)
+	}
+}
+
+func newLicenseHTTPTestRouter(t *testing.T, role string) (http.Handler, string, string, *audit.Service) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	tokens, err := auth.NewTokenManager(
@@ -87,8 +130,9 @@ func newLicenseHTTPTestRouter(t *testing.T, role string) (http.Handler, string, 
 	}
 	authService := auth.NewService(auth.NewMemoryRepository(nil), auth.NewPasswordHasher(4), tokens)
 	authHandler := auth.NewHTTPHandler(authService, tokens)
-	handler := NewHTTPHandler(NewService(NewMemoryRepository(), softwareRepository, cipher), authHandler)
+	auditService := audit.NewService(audit.NewMemoryRepository())
+	handler := NewHTTPHandler(NewService(NewMemoryRepository(), softwareRepository, cipher), authHandler, auditService)
 	router := gin.New()
 	handler.RegisterRoutes(router.Group("/api/v1"))
-	return router, pair.AccessToken, product.ID
+	return router, pair.AccessToken, product.ID, auditService
 }

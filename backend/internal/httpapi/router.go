@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"license-manager/backend/internal/modules/assignments"
+	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
 	"license-manager/backend/internal/modules/departments"
 	"license-manager/backend/internal/modules/devices"
@@ -20,6 +21,7 @@ type PingFunc func(context.Context) error
 func NewRouter(
 	ping PingFunc,
 	authHandler *auth.HTTPHandler,
+	auditHandler *audit.HTTPHandler,
 	usersHandler *users.HTTPHandler,
 	departmentHandler *departments.HTTPHandler,
 	softwareHandler *software.HTTPHandler,
@@ -54,6 +56,9 @@ func NewRouter(
 	})
 	if authHandler != nil {
 		authHandler.RegisterRoutes(v1)
+	}
+	if auditHandler != nil {
+		auditHandler.RegisterRoutes(v1)
 	}
 	if usersHandler != nil {
 		usersHandler.RegisterRoutes(v1)

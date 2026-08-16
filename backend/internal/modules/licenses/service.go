@@ -136,6 +136,25 @@ func (s *Service) Update(ctx context.Context, licenseID string, input Input) (Li
 	return updated, nil
 }
 
+func (s *Service) RevealKey(ctx context.Context, licenseID string) (string, error) {
+	licenseID = strings.TrimSpace(licenseID)
+	if licenseID == "" {
+		return "", ErrInvalidData
+	}
+	item, err := s.repository.FindByID(ctx, licenseID)
+	if err != nil {
+		return "", err
+	}
+	if len(item.EncryptedKey) == 0 {
+		return "", ErrKeyNotSet
+	}
+	plaintext, err := s.cipher.Decrypt(item.EncryptedKey)
+	if err != nil {
+		return "", fmt.Errorf("decrypt license key: %w", err)
+	}
+	return plaintext, nil
+}
+
 func (s *Service) protectKey(item *License, plaintext string) error {
 	if plaintext == "" {
 		return nil
