@@ -9,6 +9,7 @@ import (
 	"license-manager/backend/internal/modules/assignments"
 	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/dashboard"
 	"license-manager/backend/internal/modules/departments"
 	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenses"
@@ -22,6 +23,7 @@ func NewRouter(
 	ping PingFunc,
 	authHandler *auth.HTTPHandler,
 	auditHandler *audit.HTTPHandler,
+	dashboardHandler *dashboard.HTTPHandler,
 	usersHandler *users.HTTPHandler,
 	departmentHandler *departments.HTTPHandler,
 	softwareHandler *software.HTTPHandler,
@@ -59,6 +61,9 @@ func NewRouter(
 	}
 	if auditHandler != nil {
 		auditHandler.RegisterRoutes(v1)
+	}
+	if dashboardHandler != nil {
+		dashboardHandler.RegisterRoutes(v1)
 	}
 	if usersHandler != nil {
 		usersHandler.RegisterRoutes(v1)

@@ -37,6 +37,8 @@ Danh mục phòng ban và liên kết người dùng nằm trong [hướng dẫn
 
 Nhật ký thao tác và quy tắc bảo vệ dữ liệu nhạy cảm nằm trong [hướng dẫn Audit Log](docs/audit-log-testing.md).
 
+Số liệu tổng quan, chi phí và cảnh báo license nằm trong [hướng dẫn Dashboard & Alerts](docs/dashboard-alerts-testing.md).
+
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
 
 ```powershell
