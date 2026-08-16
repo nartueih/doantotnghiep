@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/departments"
 	"license-manager/backend/internal/platform/id"
 )
 
@@ -18,6 +19,7 @@ var (
 	ErrWeakPassword       = errors.New("password does not meet complexity requirements")
 	ErrIncompleteUserData = errors.New("user data is incomplete")
 	ErrCannotLockSelf     = errors.New("an administrator cannot lock their own account")
+	ErrDepartmentNotFound = errors.New("department not found")
 )
 
 type Repository interface {
@@ -31,16 +33,26 @@ type CreateInput struct {
 	Password     string
 	FullName     string
 	EmployeeCode string
+	DepartmentID string
 	Role         string
 }
 
-type Service struct {
-	repository Repository
-	hasher     auth.PasswordHasher
+type DepartmentFinder interface {
+	FindByID(context.Context, string) (departments.Department, error)
 }
 
-func NewService(repository Repository, hasher auth.PasswordHasher) *Service {
-	return &Service{repository: repository, hasher: hasher}
+type Service struct {
+	repository       Repository
+	hasher           auth.PasswordHasher
+	departmentFinder DepartmentFinder
+}
+
+func NewService(repository Repository, hasher auth.PasswordHasher, departmentFinder ...DepartmentFinder) *Service {
+	service := &Service{repository: repository, hasher: hasher}
+	if len(departmentFinder) > 0 {
+		service.departmentFinder = departmentFinder[0]
+	}
+	return service
 }
 
 func (s *Service) List(ctx context.Context) ([]auth.User, error) {
@@ -51,6 +63,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (auth.User, err
 	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
 	input.FullName = strings.TrimSpace(input.FullName)
 	input.EmployeeCode = strings.ToUpper(strings.TrimSpace(input.EmployeeCode))
+	input.DepartmentID = strings.TrimSpace(input.DepartmentID)
 	input.Role = strings.TrimSpace(input.Role)
 
 	if input.Email == "" || input.FullName == "" || input.EmployeeCode == "" {
@@ -63,6 +76,21 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (auth.User, err
 		return auth.User{}, ErrWeakPassword
 	}
 
+	departmentName := ""
+	if input.DepartmentID != "" {
+		if s.departmentFinder == nil {
+			return auth.User{}, ErrDepartmentNotFound
+		}
+		department, err := s.departmentFinder.FindByID(ctx, input.DepartmentID)
+		if errors.Is(err, departments.ErrNotFound) {
+			return auth.User{}, ErrDepartmentNotFound
+		}
+		if err != nil {
+			return auth.User{}, fmt.Errorf("find department: %w", err)
+		}
+		departmentName = department.Name
+	}
+
 	passwordHash, err := s.hasher.Hash(input.Password)
 	if err != nil {
 		return auth.User{}, fmt.Errorf("hash password: %w", err)
@@ -73,14 +101,16 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (auth.User, err
 	}
 
 	return s.repository.CreateUser(ctx, auth.User{
-		ID:           userID,
-		Email:        input.Email,
-		PasswordHash: passwordHash,
-		FullName:     input.FullName,
-		EmployeeCode: input.EmployeeCode,
-		Role:         input.Role,
-		Status:       auth.StatusActive,
-		CreatedAt:    time.Now().UTC(),
+		ID:             userID,
+		Email:          input.Email,
+		PasswordHash:   passwordHash,
+		FullName:       input.FullName,
+		EmployeeCode:   input.EmployeeCode,
+		DepartmentID:   input.DepartmentID,
+		DepartmentName: departmentName,
+		Role:           input.Role,
+		Status:         auth.StatusActive,
+		CreatedAt:      time.Now().UTC(),
 	})
 }
 

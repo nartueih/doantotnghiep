@@ -12,14 +12,16 @@ const (
 )
 
 type User struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"-"`
-	FullName     string    `json:"full_name"`
-	EmployeeCode string    `json:"employee_code"`
-	Role         string    `json:"role"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID             string    `json:"id"`
+	Email          string    `json:"email"`
+	PasswordHash   string    `json:"-"`
+	FullName       string    `json:"full_name"`
+	EmployeeCode   string    `json:"employee_code"`
+	DepartmentID   string    `json:"department_id,omitempty"`
+	DepartmentName string    `json:"department_name,omitempty"`
+	Role           string    `json:"role"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 type RefreshSession struct {
