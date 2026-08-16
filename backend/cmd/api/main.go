@@ -14,6 +14,7 @@ import (
 	"license-manager/backend/internal/httpapi"
 	"license-manager/backend/internal/modules/assignments"
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/departments"
 	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenses"
 	"license-manager/backend/internal/modules/software"
@@ -49,6 +50,7 @@ func main() {
 	passwordHasher := auth.NewPasswordHasher(12)
 	var authRepository auth.Repository
 	var usersRepository users.Repository
+	var departmentRepository departments.Repository
 	var softwareRepository software.Repository
 	var licenseRepository licenses.Repository
 	var deviceRepository devices.Repository
@@ -75,6 +77,7 @@ func main() {
 		}})
 		authRepository = memoryRepository
 		usersRepository = memoryRepository
+		departmentRepository = departments.NewMemoryRepository()
 		softwareRepository = software.NewMemoryRepository()
 		memoryLicenseRepository := licenses.NewMemoryRepository()
 		licenseRepository = memoryLicenseRepository
@@ -94,6 +97,7 @@ func main() {
 		postgresRepository := auth.NewPostgresRepository(pool)
 		authRepository = postgresRepository
 		usersRepository = postgresRepository
+		departmentRepository = departments.NewPostgresRepository(pool)
 		softwareRepository = software.NewPostgresRepository(pool)
 		licenseRepository = licenses.NewPostgresRepository(pool)
 		deviceRepository = devices.NewPostgresRepository(pool)
@@ -105,8 +109,10 @@ func main() {
 
 	authService := auth.NewService(authRepository, passwordHasher, tokenManager)
 	authHandler := auth.NewHTTPHandler(authService, tokenManager)
-	usersService := users.NewService(usersRepository, passwordHasher)
+	usersService := users.NewService(usersRepository, passwordHasher, departmentRepository)
 	usersHandler := users.NewHTTPHandler(usersService, authHandler)
+	departmentService := departments.NewService(departmentRepository)
+	departmentHandler := departments.NewHTTPHandler(departmentService, authHandler)
 	softwareService := software.NewService(softwareRepository)
 	softwareHandler := software.NewHTTPHandler(softwareService, authHandler)
 	licenseService := licenses.NewService(licenseRepository, softwareRepository, licenseCipher)
@@ -118,7 +124,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

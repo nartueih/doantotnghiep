@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/departments"
 )
 
 func TestCreateUserNormalizesAndHashesData(t *testing.T) {
@@ -76,6 +77,52 @@ func TestAdministratorCannotLockOwnAccount(t *testing.T) {
 	)
 	if !errors.Is(err, ErrCannotLockSelf) {
 		t.Fatalf("expected ErrCannotLockSelf, got %v", err)
+	}
+}
+
+func TestCreateUserWithDepartment(t *testing.T) {
+	_, repository, hasher := newUsersTestService(t)
+	departmentRepository := departments.NewMemoryRepository()
+	department := departments.Department{
+		ID:   "00000000-0000-0000-0000-000000000010",
+		Name: "Information Technology",
+		Code: "IT",
+	}
+	if _, err := departmentRepository.Create(context.Background(), department); err != nil {
+		t.Fatalf("create department: %v", err)
+	}
+	service := NewService(repository, hasher, departmentRepository)
+
+	created, err := service.Create(context.Background(), CreateInput{
+		Email:        "employee@example.com",
+		Password:     "SecurePass123",
+		FullName:     "Employee User",
+		EmployeeCode: "EMP-002",
+		DepartmentID: department.ID,
+		Role:         auth.RoleEmployee,
+	})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if created.DepartmentID != department.ID || created.DepartmentName != department.Name {
+		t.Fatalf("unexpected department data: %#v", created)
+	}
+}
+
+func TestCreateUserRejectsMissingDepartment(t *testing.T) {
+	_, repository, hasher := newUsersTestService(t)
+	service := NewService(repository, hasher, departments.NewMemoryRepository())
+
+	_, err := service.Create(context.Background(), CreateInput{
+		Email:        "employee@example.com",
+		Password:     "SecurePass123",
+		FullName:     "Employee User",
+		EmployeeCode: "EMP-002",
+		DepartmentID: "missing",
+		Role:         auth.RoleEmployee,
+	})
+	if !errors.Is(err, ErrDepartmentNotFound) {
+		t.Fatalf("expected ErrDepartmentNotFound, got %v", err)
 	}
 }
 

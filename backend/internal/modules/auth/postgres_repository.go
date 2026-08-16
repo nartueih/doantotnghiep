@@ -20,16 +20,22 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 func (r *PostgresRepository) FindByEmail(ctx context.Context, email string) (User, error) {
 	return r.findUser(ctx, `
-		SELECT id::text, email, password_hash, full_name, employee_code, role, status, created_at
-		FROM users
-		WHERE LOWER(email) = LOWER($1)`, email)
+		SELECT u.id::text, u.email, u.password_hash, u.full_name, u.employee_code,
+		       COALESCE(u.department_id::text, ''), COALESCE(d.name, ''),
+		       u.role, u.status, u.created_at
+		FROM users u
+		LEFT JOIN departments d ON d.id = u.department_id
+		WHERE LOWER(u.email) = LOWER($1)`, email)
 }
 
 func (r *PostgresRepository) FindByID(ctx context.Context, userID string) (User, error) {
 	return r.findUser(ctx, `
-		SELECT id::text, email, password_hash, full_name, employee_code, role, status, created_at
-		FROM users
-		WHERE id = $1`, userID)
+		SELECT u.id::text, u.email, u.password_hash, u.full_name, u.employee_code,
+		       COALESCE(u.department_id::text, ''), COALESCE(d.name, ''),
+		       u.role, u.status, u.created_at
+		FROM users u
+		LEFT JOIN departments d ON d.id = u.department_id
+		WHERE u.id = $1`, userID)
 }
 
 func (r *PostgresRepository) findUser(ctx context.Context, query string, argument any) (User, error) {
@@ -40,6 +46,8 @@ func (r *PostgresRepository) findUser(ctx context.Context, query string, argumen
 		&user.PasswordHash,
 		&user.FullName,
 		&user.EmployeeCode,
+		&user.DepartmentID,
+		&user.DepartmentName,
 		&user.Role,
 		&user.Status,
 		&user.CreatedAt,
@@ -110,9 +118,12 @@ func (r *PostgresRepository) RevokeRefreshSession(ctx context.Context, tokenHash
 
 func (r *PostgresRepository) ListUsers(ctx context.Context) ([]User, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id::text, email, password_hash, full_name, employee_code, role, status, created_at
-		FROM users
-		ORDER BY created_at, id`)
+		SELECT u.id::text, u.email, u.password_hash, u.full_name, u.employee_code,
+		       COALESCE(u.department_id::text, ''), COALESCE(d.name, ''),
+		       u.role, u.status, u.created_at
+		FROM users u
+		LEFT JOIN departments d ON d.id = u.department_id
+		ORDER BY u.created_at, u.id`)
 	if err != nil {
 		return nil, fmt.Errorf("list users: %w", err)
 	}
@@ -127,6 +138,8 @@ func (r *PostgresRepository) ListUsers(ctx context.Context) ([]User, error) {
 			&user.PasswordHash,
 			&user.FullName,
 			&user.EmployeeCode,
+			&user.DepartmentID,
+			&user.DepartmentName,
 			&user.Role,
 			&user.Status,
 			&user.CreatedAt,
@@ -142,27 +155,17 @@ func (r *PostgresRepository) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 func (r *PostgresRepository) CreateUser(ctx context.Context, user User) (User, error) {
-	var created User
-	err := r.pool.QueryRow(ctx, `
-		INSERT INTO users (id, email, password_hash, full_name, employee_code, role, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id::text, email, password_hash, full_name, employee_code, role, status, created_at`,
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO users (id, email, password_hash, full_name, employee_code, department_id, role, status)
+		VALUES ($1, $2, $3, $4, $5, NULLIF($6, '')::uuid, $7, $8)`,
 		user.ID,
 		user.Email,
 		user.PasswordHash,
 		user.FullName,
 		user.EmployeeCode,
+		user.DepartmentID,
 		user.Role,
 		user.Status,
-	).Scan(
-		&created.ID,
-		&created.Email,
-		&created.PasswordHash,
-		&created.FullName,
-		&created.EmployeeCode,
-		&created.Role,
-		&created.Status,
-		&created.CreatedAt,
 	)
 	if err != nil {
 		var postgresError *pgconn.PgError
@@ -176,33 +179,22 @@ func (r *PostgresRepository) CreateUser(ctx context.Context, user User) (User, e
 		}
 		return User{}, fmt.Errorf("create user: %w", err)
 	}
-	return created, nil
+	return r.FindByID(ctx, user.ID)
 }
 
 func (r *PostgresRepository) UpdateUserStatus(ctx context.Context, userID, status string) (User, error) {
-	var user User
-	err := r.pool.QueryRow(ctx, `
+	result, err := r.pool.Exec(ctx, `
 		UPDATE users
 		SET status = $2, updated_at = NOW()
-		WHERE id = $1
-		RETURNING id::text, email, password_hash, full_name, employee_code, role, status, created_at`,
+		WHERE id = $1`,
 		userID,
 		status,
-	).Scan(
-		&user.ID,
-		&user.Email,
-		&user.PasswordHash,
-		&user.FullName,
-		&user.EmployeeCode,
-		&user.Role,
-		&user.Status,
-		&user.CreatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return User{}, ErrUserNotFound
-	}
 	if err != nil {
 		return User{}, fmt.Errorf("update user status: %w", err)
 	}
-	return user, nil
+	if result.RowsAffected() != 1 {
+		return User{}, ErrUserNotFound
+	}
+	return r.FindByID(ctx, userID)
 }

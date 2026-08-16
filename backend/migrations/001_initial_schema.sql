@@ -2,11 +2,14 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE departments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(150) NOT NULL UNIQUE,
-    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(150) NOT NULL,
+    code VARCHAR(50) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX uq_departments_name ON departments (LOWER(name));
+CREATE UNIQUE INDEX uq_departments_code ON departments (LOWER(code));
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

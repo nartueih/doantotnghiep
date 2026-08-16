@@ -40,6 +40,7 @@ func (h *HTTPHandler) create(c *gin.Context) {
 		Password     string `json:"password" binding:"required"`
 		FullName     string `json:"full_name" binding:"required"`
 		EmployeeCode string `json:"employee_code" binding:"required"`
+		DepartmentID string `json:"department_id"`
 		Role         string `json:"role" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -52,6 +53,7 @@ func (h *HTTPHandler) create(c *gin.Context) {
 		Password:     request.Password,
 		FullName:     request.FullName,
 		EmployeeCode: request.EmployeeCode,
+		DepartmentID: request.DepartmentID,
 		Role:         request.Role,
 	})
 	if err != nil {
@@ -91,6 +93,8 @@ func writeUserError(c *gin.Context, err error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "password must contain at least 10 characters, including uppercase, lowercase and a number"})
 	case errors.Is(err, ErrCannotLockSelf):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+	case errors.Is(err, ErrDepartmentNotFound):
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 	case errors.Is(err, auth.ErrEmailAlreadyExists), errors.Is(err, auth.ErrCodeAlreadyExists):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, auth.ErrUserNotFound):
