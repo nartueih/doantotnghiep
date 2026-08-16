@@ -13,6 +13,7 @@ import (
 	"license-manager/backend/internal/config"
 	"license-manager/backend/internal/httpapi"
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/users"
 	"license-manager/backend/internal/platform/database"
 )
 
@@ -37,6 +38,7 @@ func main() {
 
 	passwordHasher := auth.NewPasswordHasher(12)
 	var authRepository auth.Repository
+	var usersRepository users.Repository
 	var ping httpapi.PingFunc
 	cleanup := func() {}
 
@@ -47,7 +49,7 @@ func main() {
 			logger.Error("cannot create development admin", "error", hashErr)
 			os.Exit(1)
 		}
-		authRepository = auth.NewMemoryRepository([]auth.User{{
+		memoryRepository := auth.NewMemoryRepository([]auth.User{{
 			ID:           "00000000-0000-0000-0000-000000000001",
 			Email:        cfg.DevAdminEmail,
 			PasswordHash: passwordHash,
@@ -57,6 +59,8 @@ func main() {
 			Status:       auth.StatusActive,
 			CreatedAt:    time.Now().UTC(),
 		}})
+		authRepository = memoryRepository
+		usersRepository = memoryRepository
 		ping = func(context.Context) error { return nil }
 		logger.Warn("using temporary in-memory storage; data will be lost on shutdown", "admin_email", cfg.DevAdminEmail)
 	case "postgres":
@@ -68,7 +72,9 @@ func main() {
 			logger.Error("cannot connect to database", "error", openErr)
 			os.Exit(1)
 		}
-		authRepository = auth.NewPostgresRepository(pool)
+		postgresRepository := auth.NewPostgresRepository(pool)
+		authRepository = postgresRepository
+		usersRepository = postgresRepository
 		ping = pool.Ping
 		cleanup = pool.Close
 	}
@@ -76,10 +82,12 @@ func main() {
 
 	authService := auth.NewService(authRepository, passwordHasher, tokenManager)
 	authHandler := auth.NewHTTPHandler(authService, tokenManager)
+	usersService := users.NewService(usersRepository, passwordHasher)
+	usersHandler := users.NewHTTPHandler(usersService, authHandler)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, usersHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
