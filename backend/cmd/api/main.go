@@ -19,6 +19,7 @@ import (
 	"license-manager/backend/internal/modules/departments"
 	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenses"
+	"license-manager/backend/internal/modules/selfservice"
 	"license-manager/backend/internal/modules/software"
 	"license-manager/backend/internal/modules/users"
 	"license-manager/backend/internal/platform/database"
@@ -118,6 +119,8 @@ func main() {
 	auditHandler := audit.NewHTTPHandler(auditService, authHandler)
 	dashboardService := dashboard.NewService(licenseRepository, deviceRepository, softwareRepository)
 	dashboardHandler := dashboard.NewHTTPHandler(dashboardService, authHandler)
+	selfService := selfservice.NewService(deviceRepository, assignmentRepository, licenseRepository)
+	selfServiceHandler := selfservice.NewHTTPHandler(selfService, authHandler)
 	usersService := users.NewService(usersRepository, passwordHasher, departmentRepository)
 	usersHandler := users.NewHTTPHandler(usersService, authHandler, auditService)
 	departmentService := departments.NewService(departmentRepository)
@@ -133,7 +136,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, auditHandler, dashboardHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, auditHandler, dashboardHandler, selfServiceHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

@@ -39,6 +39,8 @@ Nhật ký thao tác và quy tắc bảo vệ dữ liệu nhạy cảm nằm tro
 
 Số liệu tổng quan, chi phí và cảnh báo license nằm trong [hướng dẫn Dashboard & Alerts](docs/dashboard-alerts-testing.md).
 
+Luồng nhân viên tự xem thiết bị và license của mình nằm trong [hướng dẫn Employee Self-service](docs/employee-self-service-testing.md).
+
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
 
 ```powershell
