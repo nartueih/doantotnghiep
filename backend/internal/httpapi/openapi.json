@@ -1,0 +1,585 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Enterprise License Manager API",
+    "version": "1.0.0",
+    "description": "API quản lý người dùng, thiết bị, phần mềm, license, cấp phát, audit log, dashboard và self-service. Các endpoint quản trị yêu cầu JWT và kiểm tra vai trò ở backend."
+  },
+  "servers": [
+    { "url": "/", "description": "Current server" }
+  ],
+  "tags": [
+    { "name": "Health" },
+    { "name": "Authentication" },
+    { "name": "Users" },
+    { "name": "Departments" },
+    { "name": "Software" },
+    { "name": "Licenses" },
+    { "name": "Devices" },
+    { "name": "Assignments" },
+    { "name": "Audit" },
+    { "name": "Dashboard" },
+    { "name": "Self-service" }
+  ],
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getLiveness",
+        "summary": "Kiểm tra process đang hoạt động",
+        "security": [],
+        "responses": {
+          "200": { "description": "API đang hoạt động", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthStatus" } } } }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getReadiness",
+        "summary": "Kiểm tra storage sẵn sàng",
+        "security": [],
+        "responses": {
+          "200": { "description": "Storage sẵn sàng", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthStatus" } } } },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/api/v1/": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getAPIInfo",
+        "summary": "Thông tin API",
+        "security": [],
+        "responses": {
+          "200": { "description": "Thông tin API", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIInfo" } } } }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "operationId": "login",
+        "summary": "Đăng nhập",
+        "security": [],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } } },
+        "responses": {
+          "200": { "description": "Đăng nhập thành công", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResult" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": ["Authentication"],
+        "operationId": "refreshAccessToken",
+        "summary": "Luân chuyển refresh token",
+        "security": [],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RefreshTokenRequest" } } } },
+        "responses": {
+          "200": { "description": "Token pair mới", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResult" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "operationId": "logout",
+        "summary": "Thu hồi refresh token",
+        "security": [],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RefreshTokenRequest" } } } },
+        "responses": {
+          "204": { "description": "Đăng xuất thành công" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["Authentication"],
+        "operationId": "getCurrentUser",
+        "summary": "Xem tài khoản hiện tại",
+        "responses": {
+          "200": { "description": "Tài khoản hiện tại", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "tags": ["Users"],
+        "operationId": "listUsers",
+        "summary": "Danh sách người dùng",
+        "description": "Chỉ Admin.",
+        "x-required-roles": ["admin"],
+        "responses": {
+          "200": { "description": "Danh sách người dùng", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserList" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "operationId": "createUser",
+        "summary": "Tạo người dùng",
+        "description": "Chỉ Admin. department_id là tùy chọn nhưng phải tồn tại nếu được gửi.",
+        "x-required-roles": ["admin"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserCreateRequest" } } } },
+        "responses": {
+          "201": { "description": "Người dùng đã tạo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" }
+        }
+      }
+    },
+    "/api/v1/users/{id}/status": {
+      "patch": {
+        "tags": ["Users"],
+        "operationId": "updateUserStatus",
+        "summary": "Khóa hoặc mở khóa người dùng",
+        "x-required-roles": ["admin"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserStatusRequest" } } } },
+        "responses": {
+          "200": { "description": "Người dùng đã cập nhật", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/v1/departments": {
+      "get": {
+        "tags": ["Departments"],
+        "operationId": "listDepartments",
+        "summary": "Danh sách phòng ban",
+        "x-required-roles": ["admin", "it_manager"],
+        "responses": { "200": { "description": "Danh sách phòng ban", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentList" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      },
+      "post": {
+        "tags": ["Departments"],
+        "operationId": "createDepartment",
+        "summary": "Tạo phòng ban",
+        "x-required-roles": ["admin"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentInput" } } } },
+        "responses": { "201": { "description": "Phòng ban đã tạo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Department" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/departments/{id}": {
+      "put": {
+        "tags": ["Departments"],
+        "operationId": "updateDepartment",
+        "summary": "Cập nhật phòng ban",
+        "x-required-roles": ["admin"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentInput" } } } },
+        "responses": { "200": { "description": "Phòng ban đã cập nhật", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Department" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/software": {
+      "get": {
+        "tags": ["Software"],
+        "operationId": "listSoftware",
+        "summary": "Danh sách sản phẩm phần mềm",
+        "x-required-roles": ["admin", "it_manager"],
+        "responses": { "200": { "description": "Danh sách phần mềm", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SoftwareList" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      },
+      "post": {
+        "tags": ["Software"],
+        "operationId": "createSoftware",
+        "summary": "Tạo sản phẩm phần mềm",
+        "x-required-roles": ["admin", "it_manager"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SoftwareInput" } } } },
+        "responses": { "201": { "description": "Phần mềm đã tạo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SoftwareProduct" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/software/{id}": {
+      "put": {
+        "tags": ["Software"],
+        "operationId": "updateSoftware",
+        "summary": "Cập nhật sản phẩm phần mềm",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SoftwareInput" } } } },
+        "responses": { "200": { "description": "Phần mềm đã cập nhật", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SoftwareProduct" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/licenses": {
+      "get": {
+        "tags": ["Licenses"],
+        "operationId": "listLicenses",
+        "summary": "Danh sách license và số seat",
+        "x-required-roles": ["admin", "it_manager"],
+        "responses": { "200": { "description": "Danh sách license", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseList" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      },
+      "post": {
+        "tags": ["Licenses"],
+        "operationId": "createLicense",
+        "summary": "Tạo license",
+        "x-required-roles": ["admin", "it_manager"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseInput" } } } },
+        "responses": { "201": { "description": "License đã tạo; response không chứa plaintext key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/License" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/licenses/{id}": {
+      "put": {
+        "tags": ["Licenses"],
+        "operationId": "updateLicense",
+        "summary": "Cập nhật license",
+        "description": "Gửi license_key rỗng để giữ nguyên key hiện tại.",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseInput" } } } },
+        "responses": { "200": { "description": "License đã cập nhật", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/License" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/licenses/{id}/key": {
+      "get": {
+        "tags": ["Licenses"],
+        "operationId": "revealLicenseKey",
+        "summary": "Xem plaintext license key",
+        "description": "Dữ liệu nhạy cảm. Mỗi lần xem được ghi Audit Log trước khi key được trả về.",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "responses": { "200": { "description": "Plaintext key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseKeyResponse" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/api/v1/devices": {
+      "get": {
+        "tags": ["Devices"],
+        "operationId": "listDevices",
+        "summary": "Danh sách thiết bị",
+        "x-required-roles": ["admin", "it_manager"],
+        "responses": { "200": { "description": "Danh sách thiết bị", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceList" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      },
+      "post": {
+        "tags": ["Devices"],
+        "operationId": "createDevice",
+        "summary": "Tạo thiết bị",
+        "x-required-roles": ["admin", "it_manager"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceInput" } } } },
+        "responses": { "201": { "description": "Thiết bị đã tạo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/devices/{id}": {
+      "put": {
+        "tags": ["Devices"],
+        "operationId": "updateDevice",
+        "summary": "Cập nhật thiết bị",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceInput" } } } },
+        "responses": { "200": { "description": "Thiết bị đã cập nhật", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/devices/{id}/status": {
+      "patch": {
+        "tags": ["Devices"],
+        "operationId": "updateDeviceStatus",
+        "summary": "Đổi trạng thái thiết bị",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceStatusRequest" } } } },
+        "responses": { "200": { "description": "Thiết bị đã cập nhật", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/devices/{id}/assignment": {
+      "patch": {
+        "tags": ["Devices"],
+        "operationId": "assignDevice",
+        "summary": "Giao hoặc thu hồi thiết bị",
+        "description": "Gửi user_id rỗng để thu hồi thiết bị.",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceAssignmentRequest" } } } },
+        "responses": { "200": { "description": "Thiết bị đã giao hoặc thu hồi", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/UnprocessableEntity" } }
+      }
+    },
+    "/api/v1/license-assignments": {
+      "get": {
+        "tags": ["Assignments"],
+        "operationId": "listLicenseAssignments",
+        "summary": "Lịch sử cấp phát license",
+        "x-required-roles": ["admin", "it_manager"],
+        "responses": { "200": { "description": "Danh sách assignment", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssignmentList" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      },
+      "post": {
+        "tags": ["Assignments"],
+        "operationId": "createLicenseAssignment",
+        "summary": "Cấp license cho user hoặc device",
+        "description": "Phải gửi đúng một trong user_id hoặc device_id.",
+        "x-required-roles": ["admin", "it_manager"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssignmentCreateRequest" } } } },
+        "responses": { "201": { "description": "Assignment đã tạo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Assignment" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/UnprocessableEntity" } }
+      }
+    },
+    "/api/v1/license-assignments/{id}/revoke": {
+      "patch": {
+        "tags": ["Assignments"],
+        "operationId": "revokeLicenseAssignment",
+        "summary": "Thu hồi license assignment",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "responses": { "200": { "description": "Assignment đã thu hồi", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Assignment" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/api/v1/audit-logs": {
+      "get": {
+        "tags": ["Audit"],
+        "operationId": "listAuditLogs",
+        "summary": "Tra cứu Audit Log",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [
+          { "name": "action", "in": "query", "schema": { "type": "string", "enum": ["create", "update", "status_change", "assign", "revoke", "view_key"] } },
+          { "name": "entity_type", "in": "query", "schema": { "type": "string" } },
+          { "name": "actor_id", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 200 } }
+        ],
+        "responses": { "200": { "description": "Danh sách audit log", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditLogList" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
+    },
+    "/api/v1/dashboard/summary": {
+      "get": {
+        "tags": ["Dashboard"],
+        "operationId": "getDashboardSummary",
+        "summary": "Số liệu tổng quan",
+        "x-required-roles": ["admin", "it_manager"],
+        "responses": { "200": { "description": "Dashboard summary", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DashboardSummary" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
+    },
+    "/api/v1/dashboard/license-alerts": {
+      "get": {
+        "tags": ["Dashboard"],
+        "operationId": "getLicenseAlerts",
+        "summary": "Cảnh báo hết hạn và sử dụng seat",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "name": "days", "in": "query", "schema": { "type": "integer", "enum": [30, 60, 90], "default": 30 } }],
+        "responses": { "200": { "description": "Danh sách cảnh báo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseAlertList" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
+    },
+    "/api/v1/me/devices": {
+      "get": {
+        "tags": ["Self-service"],
+        "operationId": "getMyDevices",
+        "summary": "Thiết bị của tài khoản hiện tại",
+        "description": "User ID chỉ được lấy từ JWT; mọi user_id trong query bị bỏ qua.",
+        "responses": { "200": { "description": "Thiết bị của tôi", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceList" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      }
+    },
+    "/api/v1/me/licenses": {
+      "get": {
+        "tags": ["Self-service"],
+        "operationId": "getMyLicenses",
+        "summary": "License của tài khoản hiện tại",
+        "description": "Bao gồm license cấp trực tiếp và qua thiết bị hiện đang được giao; không chứa key material.",
+        "responses": { "200": { "description": "License của tôi", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssignedLicenseList" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "parameters": {
+      "EntityID": { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+    },
+    "responses": {
+      "BadRequest": { "description": "Dữ liệu request không hợp lệ", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Unauthorized": { "description": "Thiếu token hoặc token không hợp lệ", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Forbidden": { "description": "Không đủ quyền", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "NotFound": { "description": "Không tìm thấy dữ liệu", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Conflict": { "description": "Xung đột quy tắc nghiệp vụ", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "UnprocessableEntity": { "description": "Đối tượng tham chiếu hoặc trạng thái không phù hợp", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "ServiceUnavailable": { "description": "Storage chưa sẵn sàng", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthStatus" } } } }
+    },
+    "schemas": {
+      "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "string" } } },
+      "HealthStatus": { "type": "object", "required": ["status"], "properties": { "status": { "type": "string", "example": "ok" } } },
+      "APIInfo": { "type": "object", "properties": { "name": { "type": "string" }, "version": { "type": "string" } } },
+      "LoginRequest": { "type": "object", "required": ["email", "password"], "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string", "format": "password" } } },
+      "RefreshTokenRequest": { "type": "object", "required": ["refresh_token"], "properties": { "refresh_token": { "type": "string" } } },
+      "TokenPair": {
+        "type": "object",
+        "required": ["access_token", "refresh_token", "token_type", "expires_in"],
+        "properties": {
+          "access_token": { "type": "string" },
+          "refresh_token": { "type": "string" },
+          "token_type": { "type": "string", "example": "Bearer" },
+          "expires_in": { "type": "integer", "format": "int64" }
+        }
+      },
+      "AuthResult": { "type": "object", "required": ["tokens", "user"], "properties": { "tokens": { "$ref": "#/components/schemas/TokenPair" }, "user": { "$ref": "#/components/schemas/User" } } },
+      "User": {
+        "type": "object",
+        "required": ["id", "email", "full_name", "employee_code", "role", "status", "created_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string", "format": "email" },
+          "full_name": { "type": "string" },
+          "employee_code": { "type": "string" },
+          "department_id": { "type": "string", "format": "uuid" },
+          "department_name": { "type": "string" },
+          "role": { "type": "string", "enum": ["admin", "it_manager", "employee"] },
+          "status": { "type": "string", "enum": ["active", "locked"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UserCreateRequest": {
+        "type": "object",
+        "required": ["email", "password", "full_name", "employee_code", "role"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password", "minLength": 10, "description": "Phải có chữ hoa, chữ thường và chữ số." },
+          "full_name": { "type": "string" },
+          "employee_code": { "type": "string" },
+          "department_id": { "type": "string", "format": "uuid" },
+          "role": { "type": "string", "enum": ["admin", "it_manager", "employee"] }
+        }
+      },
+      "UserStatusRequest": { "type": "object", "required": ["status"], "properties": { "status": { "type": "string", "enum": ["active", "locked"] } } },
+      "Department": {
+        "type": "object",
+        "required": ["id", "name", "code", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" }, "name": { "type": "string" }, "code": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DepartmentInput": { "type": "object", "required": ["name", "code"], "properties": { "name": { "type": "string" }, "code": { "type": "string" } } },
+      "SoftwareProduct": {
+        "type": "object",
+        "required": ["id", "name", "publisher", "version", "description", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" }, "name": { "type": "string" }, "publisher": { "type": "string" },
+          "version": { "type": "string" }, "description": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SoftwareInput": { "type": "object", "required": ["name", "publisher"], "properties": { "name": { "type": "string" }, "publisher": { "type": "string" }, "version": { "type": "string" }, "description": { "type": "string" } } },
+      "License": {
+        "type": "object",
+        "required": ["id", "software_product_id", "name", "license_type", "assignment_type", "seat_count", "used_seats", "available_seats", "cost", "lifecycle_status", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" }, "software_product_id": { "type": "string", "format": "uuid" }, "name": { "type": "string" },
+          "license_type": { "type": "string", "enum": ["subscription", "perpetual"] },
+          "assignment_type": { "type": "string", "enum": ["user", "device", "mixed"] },
+          "seat_count": { "type": "integer", "minimum": 1 }, "used_seats": { "type": "integer" }, "available_seats": { "type": "integer" },
+          "key_hint": { "type": "string", "readOnly": true }, "vendor": { "type": "string" },
+          "purchased_at": { "type": "string", "format": "date" }, "starts_at": { "type": "string", "format": "date" }, "expires_at": { "type": "string", "format": "date" },
+          "cost": { "type": "number", "format": "double" }, "currency": { "type": "string", "minLength": 3, "maxLength": 3 }, "notes": { "type": "string" },
+          "lifecycle_status": { "type": "string", "enum": ["upcoming", "active", "expired"] },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LicenseInput": {
+        "type": "object",
+        "required": ["software_product_id", "name", "license_type", "assignment_type", "seat_count"],
+        "properties": {
+          "software_product_id": { "type": "string", "format": "uuid" }, "name": { "type": "string" },
+          "license_type": { "type": "string", "enum": ["subscription", "perpetual"] }, "assignment_type": { "type": "string", "enum": ["user", "device", "mixed"] },
+          "seat_count": { "type": "integer", "minimum": 1 }, "license_key": { "type": "string", "writeOnly": true }, "vendor": { "type": "string" },
+          "purchased_at": { "type": "string", "format": "date" }, "starts_at": { "type": "string", "format": "date" }, "expires_at": { "type": "string", "format": "date" },
+          "cost": { "type": "number", "minimum": 0 }, "currency": { "type": "string", "minLength": 3, "maxLength": 3 }, "notes": { "type": "string" }
+        }
+      },
+      "LicenseKeyResponse": { "type": "object", "required": ["license_key"], "properties": { "license_key": { "type": "string", "description": "Plaintext nhạy cảm; không ghi vào log hoặc lưu trữ phía client." } } },
+      "Device": {
+        "type": "object",
+        "required": ["id", "asset_code", "name", "device_type", "status", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" }, "assigned_user_id": { "type": "string", "format": "uuid" }, "assigned_user_name": { "type": "string" },
+          "asset_code": { "type": "string" }, "serial_number": { "type": "string" }, "name": { "type": "string" }, "device_type": { "type": "string" },
+          "manufacturer": { "type": "string" }, "model": { "type": "string" },
+          "status": { "type": "string", "enum": ["available", "assigned", "maintenance", "retired", "lost"] },
+          "purchased_at": { "type": "string", "format": "date" }, "warranty_expires_at": { "type": "string", "format": "date" },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DeviceInput": {
+        "type": "object",
+        "required": ["asset_code", "name", "device_type"],
+        "properties": {
+          "asset_code": { "type": "string" }, "serial_number": { "type": "string" }, "name": { "type": "string" }, "device_type": { "type": "string" },
+          "manufacturer": { "type": "string" }, "model": { "type": "string" }, "purchased_at": { "type": "string", "format": "date" }, "warranty_expires_at": { "type": "string", "format": "date" }
+        }
+      },
+      "DeviceStatusRequest": { "type": "object", "required": ["status"], "properties": { "status": { "type": "string", "enum": ["available", "maintenance", "retired", "lost"] } } },
+      "DeviceAssignmentRequest": { "type": "object", "properties": { "user_id": { "type": "string", "format": "uuid", "description": "Để rỗng để thu hồi thiết bị." } } },
+      "Assignment": {
+        "type": "object",
+        "required": ["id", "license_id", "license_name", "assigned_by", "assigned_at", "status"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" }, "license_id": { "type": "string", "format": "uuid" }, "license_name": { "type": "string" },
+          "user_id": { "type": "string", "format": "uuid" }, "device_id": { "type": "string", "format": "uuid" }, "target_name": { "type": "string" },
+          "assigned_by": { "type": "string", "format": "uuid" }, "assigned_by_name": { "type": "string" }, "assigned_at": { "type": "string", "format": "date-time" },
+          "revoked_at": { "type": "string", "format": "date-time" }, "revoked_by": { "type": "string", "format": "uuid" }, "revoked_by_name": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "revoked"] }, "notes": { "type": "string" }
+        }
+      },
+      "AssignmentCreateRequest": {
+        "type": "object",
+        "required": ["license_id"],
+        "properties": { "license_id": { "type": "string", "format": "uuid" }, "user_id": { "type": "string", "format": "uuid" }, "device_id": { "type": "string", "format": "uuid" }, "notes": { "type": "string" } }
+      },
+      "AuditLog": {
+        "type": "object",
+        "required": ["id", "action", "entity_type", "metadata", "created_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" }, "actor_id": { "type": "string", "format": "uuid" }, "actor_name": { "type": "string" }, "actor_email": { "type": "string", "format": "email" },
+          "action": { "type": "string" }, "entity_type": { "type": "string" }, "entity_id": { "type": "string", "format": "uuid" },
+          "metadata": { "type": "object", "additionalProperties": true }, "ip_address": { "type": "string" }, "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CostByCurrency": { "type": "object", "properties": { "currency": { "type": "string" }, "amount": { "type": "number" } } },
+      "DashboardSummary": {
+        "type": "object",
+        "properties": {
+          "total_devices": { "type": "integer" }, "devices_by_status": { "type": "object", "additionalProperties": { "type": "integer" } },
+          "total_software_products": { "type": "integer" }, "total_licenses": { "type": "integer" }, "total_seats": { "type": "integer" },
+          "used_seats": { "type": "integer" }, "available_seats": { "type": "integer" }, "expired_licenses": { "type": "integer" },
+          "expiring_in_30_days": { "type": "integer" }, "expiring_in_60_days": { "type": "integer" }, "expiring_in_90_days": { "type": "integer" },
+          "exhausted_licenses": { "type": "integer" }, "high_usage_licenses": { "type": "integer" },
+          "costs_by_currency": { "type": "array", "items": { "$ref": "#/components/schemas/CostByCurrency" } }, "generated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LicenseAlert": {
+        "type": "object",
+        "properties": {
+          "license_id": { "type": "string", "format": "uuid" }, "license_name": { "type": "string" }, "license_type": { "type": "string" },
+          "expires_at": { "type": "string", "format": "date" }, "days_until_expiry": { "type": "integer" }, "seat_count": { "type": "integer" },
+          "used_seats": { "type": "integer" }, "available_seats": { "type": "integer" }, "utilization_percent": { "type": "number" },
+          "severity": { "type": "string", "enum": ["critical", "warning", "info"] },
+          "alert_types": { "type": "array", "items": { "type": "string", "enum": ["expired", "expiring", "exhausted", "high_usage"] } }
+        }
+      },
+      "AssignedLicense": {
+        "type": "object",
+        "properties": {
+          "assignment_id": { "type": "string", "format": "uuid" }, "license_id": { "type": "string", "format": "uuid" }, "license_name": { "type": "string" },
+          "software_product_id": { "type": "string", "format": "uuid" }, "license_type": { "type": "string" }, "assignment_source": { "type": "string", "enum": ["user", "device"] },
+          "device_id": { "type": "string", "format": "uuid" }, "device_asset_code": { "type": "string" }, "assigned_at": { "type": "string", "format": "date-time" },
+          "expires_at": { "type": "string", "format": "date" }, "lifecycle_status": { "type": "string", "enum": ["upcoming", "active", "expired"] }, "notes": { "type": "string" }
+        }
+      },
+      "UserList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/User" } } } }] },
+      "DepartmentList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Department" } } } }] },
+      "SoftwareList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/SoftwareProduct" } } } }] },
+      "LicenseList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/License" } } } }] },
+      "DeviceList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Device" } } } }] },
+      "AssignmentList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Assignment" } } } }] },
+      "AuditLogList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/AuditLog" } } } }] },
+      "AssignedLicenseList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/AssignedLicense" } } } }] },
+      "LicenseAlertList": {
+        "type": "object",
+        "required": ["items", "total", "expiry_window_days"],
+        "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/LicenseAlert" } }, "total": { "type": "integer" }, "expiry_window_days": { "type": "integer", "enum": [30, 60, 90] } }
+      },
+      "ListEnvelope": { "type": "object", "required": ["items", "total"], "properties": { "items": { "type": "array", "items": {} }, "total": { "type": "integer", "minimum": 0 } } }
+    }
+  }
+}
