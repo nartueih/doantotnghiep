@@ -41,6 +41,8 @@ Số liệu tổng quan, chi phí và cảnh báo license nằm trong [hướng 
 
 Luồng nhân viên tự xem thiết bị và license của mình nằm trong [hướng dẫn Employee Self-service](docs/employee-self-service-testing.md).
 
+Hợp đồng API và cách sử dụng Swagger UI nằm trong [hướng dẫn OpenAPI](docs/openapi-testing.md).
+
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
 
 ```powershell

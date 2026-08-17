@@ -35,6 +35,7 @@ func NewRouter(
 ) http.Handler {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
+	registerDocumentationRoutes(router)
 
 	health := router.Group("/health")
 	health.GET("/live", func(c *gin.Context) {
