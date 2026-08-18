@@ -5,16 +5,10 @@ import {
   type AuthSession,
   login,
   logout,
-  type UserRole,
 } from './lib/auth-api'
+import { DashboardScreen } from './features/dashboard/DashboardScreen'
 
 const SESSION_KEY = 'enterprise-license-manager.session'
-
-const roleLabels: Record<UserRole, string> = {
-  admin: 'Quản trị viên',
-  it_manager: 'Quản lý IT',
-  employee: 'Nhân viên',
-}
 
 function readSession(): AuthSession | null {
   const value = sessionStorage.getItem(SESSION_KEY)
@@ -43,7 +37,7 @@ function App() {
   }
 
   if (session) {
-    return <WelcomeScreen session={session} onLogout={handleLogout} />
+    return <DashboardScreen session={session} onLogout={handleLogout} />
   }
 
   return <LoginScreen onAuthenticated={handleAuthenticated} />
@@ -155,9 +149,11 @@ function LoginScreen({ onAuthenticated }: LoginScreenProps) {
 
             <div className="label-row">
               <label htmlFor="password">Mật khẩu</label>
-              <button type="button" className="text-button" onClick={fillDevelopmentAccount}>
-                Dùng tài khoản thử
-              </button>
+              {import.meta.env.DEV && (
+                <button type="button" className="text-button" onClick={fillDevelopmentAccount}>
+                  Dùng tài khoản thử
+                </button>
+              )}
             </div>
             <div className="input-wrap">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -198,52 +194,6 @@ function LoginScreen({ onAuthenticated }: LoginScreenProps) {
             </svg>
             Phiên đăng nhập được bảo vệ và tự xóa khi đóng tab.
           </p>
-        </div>
-      </section>
-    </main>
-  )
-}
-
-interface WelcomeScreenProps {
-  session: AuthSession
-  onLogout: () => Promise<void>
-}
-
-function WelcomeScreen({ session, onLogout }: WelcomeScreenProps) {
-  const initials = session.user.full_name
-    .split(' ')
-    .slice(-2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-
-  return (
-    <main className="welcome-page">
-      <header className="app-header">
-        <div className="brand-lockup dark">
-          <span className="brand-mark" aria-hidden="true">LM</span>
-          <div>
-            <strong>License Manager</strong>
-            <span>Enterprise workspace</span>
-          </div>
-        </div>
-        <button className="secondary-button" type="button" onClick={onLogout}>Đăng xuất</button>
-      </header>
-
-      <section className="welcome-content">
-        <div className="welcome-card">
-          <div className="avatar">{initials || 'U'}</div>
-          <span className="eyebrow blue">Đăng nhập thành công</span>
-          <h1>Xin chào, {session.user.full_name}</h1>
-          <p>
-            Nền móng xác thực của web quản trị đã kết nối thành công với Go backend.
-            Tiếp theo chúng ta sẽ xây dựng bố cục dashboard và điều hướng theo vai trò.
-          </p>
-          <dl className="account-summary">
-            <div><dt>Email</dt><dd>{session.user.email}</dd></div>
-            <div><dt>Vai trò</dt><dd>{roleLabels[session.user.role]}</dd></div>
-            <div><dt>Mã nhân viên</dt><dd>{session.user.employee_code || 'Chưa cập nhật'}</dd></div>
-          </dl>
         </div>
       </section>
     </main>
