@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type Config struct {
 	RefreshTokenTTL      time.Duration
 	DevAdminEmail        string
 	DevAdminPassword     string
+	SeedDemoData         bool
 	LicenseEncryptionKey string
 }
 
@@ -50,6 +52,10 @@ func Load() (Config, error) {
 	if storageDriver == "memory" && appEnv == "production" {
 		return Config{}, errors.New("STORAGE_DRIVER=memory is not allowed in production")
 	}
+	seedDemoData, err := strconv.ParseBool(valueOrDefault("SEED_DEMO_DATA", "true"))
+	if err != nil {
+		return Config{}, errors.New("SEED_DEMO_DATA must be true or false")
+	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if len(jwtSecret) < 32 {
@@ -77,6 +83,7 @@ func Load() (Config, error) {
 		RefreshTokenTTL:      refreshTTL,
 		DevAdminEmail:        valueOrDefault("DEV_ADMIN_EMAIL", "admin@local.test"),
 		DevAdminPassword:     valueOrDefault("DEV_ADMIN_PASSWORD", "ChangeMe123!"),
+		SeedDemoData:         seedDemoData,
 		LicenseEncryptionKey: licenseEncryptionKey,
 	}, nil
 }

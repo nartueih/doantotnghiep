@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"license-manager/backend/internal/config"
+	"license-manager/backend/internal/developmentseed"
 	"license-manager/backend/internal/httpapi"
 	"license-manager/backend/internal/modules/assignments"
 	"license-manager/backend/internal/modules/audit"
@@ -25,6 +26,8 @@ import (
 	"license-manager/backend/internal/platform/database"
 	"license-manager/backend/internal/platform/securevalue"
 )
+
+const developmentAdminID = "00000000-0000-0000-0000-000000000001"
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -70,7 +73,7 @@ func main() {
 			os.Exit(1)
 		}
 		memoryRepository := auth.NewMemoryRepository([]auth.User{{
-			ID:           "00000000-0000-0000-0000-000000000001",
+			ID:           developmentAdminID,
 			Email:        cfg.DevAdminEmail,
 			PasswordHash: passwordHash,
 			FullName:     "Development Admin",
@@ -133,6 +136,30 @@ func main() {
 	deviceHandler := devices.NewHTTPHandler(deviceService, authHandler, auditService)
 	assignmentService := assignments.NewService(assignmentRepository, licenseRepository, authRepository, deviceRepository)
 	assignmentHandler := assignments.NewHTTPHandler(assignmentService, authHandler, auditService)
+
+	if cfg.StorageDriver == "memory" && cfg.SeedDemoData {
+		seedResult, seedErr := developmentseed.Seed(context.Background(), developmentseed.Services{
+			Departments: departmentService,
+			Users:       usersService,
+			Software:    softwareService,
+			Licenses:    licenseService,
+			Devices:     deviceService,
+			Assignments: assignmentService,
+		}, developmentAdminID, time.Now())
+		if seedErr != nil {
+			logger.Error("cannot seed development demo data", "error", seedErr)
+			os.Exit(1)
+		}
+		logger.Info(
+			"development demo data seeded",
+			"departments", seedResult.Departments,
+			"users", seedResult.Users,
+			"software", seedResult.Software,
+			"licenses", seedResult.Licenses,
+			"devices", seedResult.Devices,
+			"assignments", seedResult.Assignments,
+		)
+	}
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
