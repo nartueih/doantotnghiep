@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { AuthSession, UserRole } from '../../lib/auth-api'
+import type { AdminPage } from '../../components/layout/AdminShell'
 import {
   DashboardAPIError,
   getDashboardSummary,
@@ -11,6 +12,7 @@ import './DashboardScreen.css'
 
 interface DashboardScreenProps {
   session: AuthSession
+  onNavigate: (page: AdminPage) => void
   onLogout: () => Promise<void>
 }
 
@@ -25,10 +27,10 @@ const roleLabels: Record<UserRole, string> = {
   employee: 'Nhân viên',
 }
 
-const navigation: Array<{ label: string; icon: IconName; active?: boolean }> = [
-  { label: 'Tổng quan', icon: 'grid', active: true },
+const navigation: Array<{ label: string; icon: IconName; page?: AdminPage }> = [
+  { label: 'Tổng quan', icon: 'grid', page: 'dashboard' },
   { label: 'Phần mềm', icon: 'software' },
-  { label: 'License', icon: 'key' },
+  { label: 'License', icon: 'key', page: 'licenses' },
   { label: 'Cấp phát', icon: 'assignment' },
   { label: 'Thiết bị', icon: 'device' },
   { label: 'Người dùng', icon: 'users' },
@@ -56,7 +58,7 @@ const severityLabels = {
   info: 'Thông tin',
 }
 
-export function DashboardScreen({ session, onLogout }: DashboardScreenProps) {
+export function DashboardScreen({ session, onNavigate, onLogout }: DashboardScreenProps) {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [alerts, setAlerts] = useState<LicenseAlert[]>([])
   const [expiryWindow, setExpiryWindow] = useState<ExpiryWindow>(90)
@@ -116,9 +118,9 @@ export function DashboardScreen({ session, onLogout }: DashboardScreenProps) {
 
         <nav aria-label="Điều hướng chính">
           <span className="nav-section-label">Quản lý</span>
-          {navigation.slice(0, 5).map((item) => <NavItem key={item.label} {...item} />)}
+          {navigation.slice(0, 5).map((item) => <NavItem key={item.label} {...item} onNavigate={onNavigate} />)}
           <span className="nav-section-label second">Hệ thống</span>
-          {navigation.slice(5).map((item) => <NavItem key={item.label} {...item} />)}
+          {navigation.slice(5).map((item) => <NavItem key={item.label} {...item} onNavigate={onNavigate} />)}
         </nav>
 
         <div className="sidebar-account">
@@ -191,12 +193,24 @@ export function DashboardScreen({ session, onLogout }: DashboardScreenProps) {
   )
 }
 
-function NavItem({ label, icon, active }: { label: string; icon: IconName; active?: boolean }) {
+function NavItem({ label, icon, page, onNavigate }: {
+  label: string
+  icon: IconName
+  page?: AdminPage
+  onNavigate: (page: AdminPage) => void
+}) {
+  if (page === 'licenses') {
+    return (
+      <button type="button" className="nav-item nav-button" onClick={() => onNavigate(page)}>
+        <Icon name={icon} />{label}
+      </button>
+    )
+  }
   return (
-    <span className={active ? 'nav-item active' : 'nav-item'} aria-current={active ? 'page' : undefined}>
+    <span className={page === 'dashboard' ? 'nav-item active' : 'nav-item'} aria-current={page === 'dashboard' ? 'page' : undefined}>
       <Icon name={icon} />
       {label}
-      {!active && <small>Sắp có</small>}
+      {!page && <small>Sắp có</small>}
     </span>
   )
 }
