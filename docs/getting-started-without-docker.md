@@ -55,9 +55,12 @@ $env:ACCESS_TOKEN_TTL = "15m"
 $env:REFRESH_TOKEN_TTL = "168h"
 $env:DEV_ADMIN_EMAIL = "admin@local.test"
 $env:DEV_ADMIN_PASSWORD = "ChangeMe123!"
+$env:SEED_DEMO_DATA = "true"
 ```
 
 `JWT_SECRET` phải có ít nhất 32 ký tự. Tất cả giá trị trong phần này chỉ dùng cho môi trường phát triển.
+
+Khi `STORAGE_DRIVER=memory` và `SEED_DEMO_DATA=true`, backend tự tạo dữ liệu minh họa cho dashboard gồm phòng ban, người dùng, phần mềm, license, thiết bị và cấp phát. Đặt `SEED_DEMO_DATA=false` nếu cần một memory storage trống. Seed không chạy với PostgreSQL.
 
 ## Bước 5: chạy backend
 
@@ -65,7 +68,7 @@ $env:DEV_ADMIN_PASSWORD = "ChangeMe123!"
 go run ./cmd/api
 ```
 
-Giữ cửa sổ này mở. Log cần cho biết HTTP server chạy tại `:8080`, storage là `memory`, đồng thời cảnh báo dữ liệu sẽ mất khi tắt server.
+Giữ cửa sổ này mở. Log cần cho biết HTTP server chạy tại `:8080`, storage là `memory`, dữ liệu demo đã được seed, đồng thời cảnh báo dữ liệu sẽ mất khi tắt server.
 
 ## Bước 6: kiểm tra health API
 
@@ -185,4 +188,3 @@ Sau khi hoàn thành và hiểu toàn bộ luồng trên, bước tiếp theo m�
 5. Tạo tài khoản Admin thật trong bảng `users`.
 
 Không cần thực hiện các bước database ở thời điểm hiện tại.
-
