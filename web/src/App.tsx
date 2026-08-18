@@ -1,14 +1,20 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import './App.css'
+import type { AdminPage } from './components/layout/AdminShell'
+import { DashboardScreen } from './features/dashboard/DashboardScreen'
+import { LicenseManagementScreen } from './features/licenses/LicenseManagementScreen'
 import {
   APIError,
   type AuthSession,
   login,
   logout,
 } from './lib/auth-api'
-import { DashboardScreen } from './features/dashboard/DashboardScreen'
 
 const SESSION_KEY = 'enterprise-license-manager.session'
+
+function pageFromHash(): AdminPage {
+  return window.location.hash === '#/licenses' ? 'licenses' : 'dashboard'
+}
 
 function readSession(): AuthSession | null {
   const value = sessionStorage.getItem(SESSION_KEY)
@@ -24,6 +30,18 @@ function readSession(): AuthSession | null {
 
 function App() {
   const [session, setSession] = useState<AuthSession | null>(readSession)
+  const [adminPage, setAdminPage] = useState<AdminPage>(pageFromHash)
+
+  useEffect(() => {
+    const handleHashChange = () => setAdminPage(pageFromHash())
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  function handleNavigate(page: AdminPage) {
+    window.location.hash = page === 'licenses' ? '/licenses' : '/dashboard'
+    setAdminPage(page)
+  }
 
   function handleAuthenticated(nextSession: AuthSession) {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(nextSession))
@@ -33,11 +51,16 @@ function App() {
   async function handleLogout() {
     if (session) await logout(session.tokens.refresh_token)
     sessionStorage.removeItem(SESSION_KEY)
+    window.location.hash = ''
+    setAdminPage('dashboard')
     setSession(null)
   }
 
   if (session) {
-    return <DashboardScreen session={session} onLogout={handleLogout} />
+    if (adminPage === 'licenses') {
+      return <LicenseManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
+    }
+    return <DashboardScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
   }
 
   return <LoginScreen onAuthenticated={handleAuthenticated} />

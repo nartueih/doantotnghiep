@@ -70,6 +70,8 @@
 .nav-section-label.second { margin-top: 22px; }
 
 .nav-item {
+  width: 100%;
+  box-sizing: border-box;
   min-height: 42px;
   margin-bottom: 3px;
   padding: 0 11px;
@@ -82,6 +84,16 @@
   font-weight: 600;
   cursor: default;
 }
+
+.nav-button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-button:hover { color: #344a66; background: #f5f7f9; }
 
 .nav-item svg {
   width: 17px;
