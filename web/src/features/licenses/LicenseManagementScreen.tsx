@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AdminShell, Icon, type AdminPage } from '../../components/layout/AdminShell'
 import type { AuthSession } from '../../lib/auth-api'
 import {
+  archiveLicense,
   createLicense,
   getLicenses,
   getSoftwareProducts,
@@ -21,7 +22,7 @@ interface LicenseManagementScreenProps {
   onLogout: () => Promise<void>
 }
 
-type LicenseFilter = 'all' | 'active' | 'expiring' | 'expired' | 'high_usage' | 'exhausted'
+type LicenseFilter = 'all' | 'active' | 'expiring' | 'expired' | 'high_usage' | 'exhausted' | 'archived'
 
 const filterLabels: Record<LicenseFilter, string> = {
   all: 'Tất cả trạng thái',
@@ -30,6 +31,7 @@ const filterLabels: Record<LicenseFilter, string> = {
   expired: 'Đã hết hạn',
   high_usage: 'Sử dụng cao',
   exhausted: 'Hết seat',
+  archived: 'Đã lưu trữ',
 }
 
 export function LicenseManagementScreen({ session, onNavigate, onLogout }: LicenseManagementScreenProps) {
@@ -42,6 +44,7 @@ export function LicenseManagementScreen({ session, onNavigate, onLogout }: Licen
   const [reloadKey, setReloadKey] = useState(0)
   const [keyDialog, setKeyDialog] = useState<{ license: LicenseItem; key?: string; error?: string; loading: boolean } | null>(null)
   const [formLicense, setFormLicense] = useState<LicenseItem | 'new' | null>(null)
+  const [archiveDialog, setArchiveDialog] = useState<{ license: LicenseItem; loading: boolean; error?: string } | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
   const [copied, setCopied] = useState(false)
 
@@ -84,8 +87,8 @@ export function LicenseManagementScreen({ session, onNavigate, onLogout }: Licen
   const counts = useMemo(() => ({
     total: licenses.length,
     active: licenses.filter((item) => item.lifecycle_status === 'active').length,
-    expiring: licenses.filter((item) => isExpiring(item)).length,
-    attention: licenses.filter((item) => item.lifecycle_status === 'expired' || item.available_seats === 0 || utilization(item) >= 80).length,
+    expiring: licenses.filter((item) => item.lifecycle_status !== 'archived' && isExpiring(item)).length,
+    attention: licenses.filter((item) => item.lifecycle_status !== 'archived' && (item.lifecycle_status === 'expired' || item.available_seats === 0 || utilization(item) >= 80)).length,
   }), [licenses])
 
   async function showKey(license: LicenseItem) {
@@ -118,6 +121,27 @@ export function LicenseManagementScreen({ session, onNavigate, onLogout }: Licen
     }
     setFormLicense(null)
     setReloadKey((key) => key + 1)
+  }
+
+  async function confirmArchive() {
+    if (!archiveDialog) return
+    const license = archiveDialog.license
+    setArchiveDialog({ license, loading: true })
+    try {
+      await archiveLicense(session.tokens.access_token, license.id)
+      setArchiveDialog(null)
+      setSuccessMessage(`Đã lưu trữ ${license.name}. Lịch sử cấp phát vẫn được giữ nguyên.`)
+      setReloadKey((key) => key + 1)
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Không thể lưu trữ license.'
+      setArchiveDialog({
+        license,
+        loading: false,
+        error: message.includes('active assignments')
+          ? 'Hãy thu hồi toàn bộ cấp phát đang hoạt động trước khi lưu trữ license.'
+          : message,
+      })
+    }
   }
 
   const headerActions = (
@@ -176,7 +200,7 @@ export function LicenseManagementScreen({ session, onNavigate, onLogout }: Licen
               <table className="license-table">
                 <thead><tr><th>License / Phần mềm</th><th>Loại</th><th>Nhà cung cấp</th><th>Sử dụng seat</th><th>Thời hạn</th><th>Trạng thái</th><th /></tr></thead>
                 <tbody>{filteredLicenses.map((license) => (
-                  <LicenseRow license={license} product={productMap.get(license.software_product_id)} onShowKey={showKey} onEdit={setFormLicense} key={license.id} />
+                  <LicenseRow license={license} product={productMap.get(license.software_product_id)} onShowKey={showKey} onEdit={setFormLicense} onArchive={(item) => setArchiveDialog({ license: item, loading: false })} key={license.id} />
                 ))}</tbody>
               </table>
             </div>
@@ -208,6 +232,21 @@ export function LicenseManagementScreen({ session, onNavigate, onLogout }: Licen
           onSubmit={saveLicense}
         />
       )}
+      {archiveDialog && (
+        <div className="archive-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (!archiveDialog.loading && event.target === event.currentTarget) setArchiveDialog(null) }}>
+          <section className="archive-dialog" role="dialog" aria-modal="true" aria-labelledby="archive-dialog-title">
+            <span className="archive-dialog-icon"><Icon name="archive" /></span>
+            <h2 id="archive-dialog-title">Lưu trữ license?</h2>
+            <p><strong>{archiveDialog.license.name}</strong> sẽ không thể chỉnh sửa hoặc cấp phát thêm sau khi lưu trữ.</p>
+            <div className="archive-dialog-note"><Icon name="check" /><span>Dữ liệu license, activation key và lịch sử audit/cấp phát vẫn được giữ nguyên.</span></div>
+            {archiveDialog.error && <div className="archive-dialog-error" role="alert"><Icon name="alert" />{archiveDialog.error}</div>}
+            <footer>
+              <button type="button" className="archive-cancel" onClick={() => setArchiveDialog(null)} disabled={archiveDialog.loading}>Hủy</button>
+              <button type="button" className="archive-confirm" onClick={confirmArchive} disabled={archiveDialog.loading}>{archiveDialog.loading ? 'Đang lưu trữ...' : 'Xác nhận lưu trữ'}</button>
+            </footer>
+          </section>
+        </div>
+      )}
     </AdminShell>
   )
 }
@@ -216,18 +255,18 @@ function StatCard({ label, value, detail, tone, icon, loading }: { label: string
   return <article className="license-stat"><span className={tone}><Icon name={icon} /></span><div><p>{label}</p>{loading ? <i /> : <strong>{value}</strong>}<small>{detail}</small></div></article>
 }
 
-function LicenseRow({ license, product, onShowKey, onEdit }: { license: LicenseItem; product?: SoftwareProduct; onShowKey: (license: LicenseItem) => void; onEdit: (license: LicenseItem) => void }) {
+function LicenseRow({ license, product, onShowKey, onEdit, onArchive }: { license: LicenseItem; product?: SoftwareProduct; onShowKey: (license: LicenseItem) => void; onEdit: (license: LicenseItem) => void; onArchive: (license: LicenseItem) => void }) {
   const percent = utilization(license)
   const status = displayStatus(license)
   return (
-    <tr>
+    <tr className={license.lifecycle_status === 'archived' ? 'archived' : undefined}>
       <td><div className="license-identity"><span>{license.name.slice(0, 2).toUpperCase()}</span><div><strong>{license.name}</strong><small>{product ? `${product.publisher} · ${product.name}` : 'Chưa xác định phần mềm'}</small></div></div></td>
       <td><span className="license-type">{license.license_type === 'subscription' ? 'Thuê bao' : 'Vĩnh viễn'}</span><small className="assignment-type">{assignmentLabel(license.assignment_type)}</small></td>
       <td><strong className="vendor-name">{license.vendor || '—'}</strong><small className="key-hint">{license.key_hint || 'Chưa có key'}</small></td>
       <td><div className="seat-value"><strong>{license.used_seats}</strong><span>/ {license.seat_count}</span><small>{Math.round(percent)}%</small></div><span className="license-seat-track"><i className={percent >= 100 ? 'full' : percent >= 80 ? 'high' : ''} style={{ width: `${Math.min(percent, 100)}%` }} /></span></td>
       <td><strong className="expiry-date">{license.expires_at ? formatDate(license.expires_at) : 'Không thời hạn'}</strong><small className="expiry-detail">{expiryDetail(license)}</small></td>
       <td><span className={`license-status ${status.tone}`}><i />{status.label}</span></td>
-      <td><div className="license-row-actions"><button className="license-row-action" type="button" onClick={() => onEdit(license)} aria-label={`Chỉnh sửa ${license.name}`} title="Chỉnh sửa"><Icon name="edit" /></button><button className="license-row-action" type="button" onClick={() => onShowKey(license)} aria-label={`Xem activation key của ${license.name}`} title="Xem activation key"><Icon name="eye" /></button></div></td>
+      <td><div className="license-row-actions">{license.lifecycle_status !== 'archived' && <button className="license-row-action" type="button" onClick={() => onEdit(license)} aria-label={`Chỉnh sửa ${license.name}`} title="Chỉnh sửa"><Icon name="edit" /></button>}<button className="license-row-action" type="button" onClick={() => onShowKey(license)} aria-label={`Xem activation key của ${license.name}`} title="Xem activation key"><Icon name="eye" /></button>{license.lifecycle_status !== 'archived' && <button className="license-row-action archive" type="button" onClick={() => onArchive(license)} disabled={license.used_seats > 0} aria-label={`Lưu trữ ${license.name}`} title={license.used_seats > 0 ? 'Cần thu hồi toàn bộ cấp phát trước' : 'Lưu trữ license'}><Icon name="archive" /></button>}</div></td>
     </tr>
   )
 }
@@ -242,13 +281,15 @@ function isExpiring(license: LicenseItem): boolean { const days = daysUntil(lice
 function matchesFilter(license: LicenseItem, filter: LicenseFilter): boolean {
   if (filter === 'all') return true
   if (filter === 'active') return license.lifecycle_status === 'active'
-  if (filter === 'expiring') return isExpiring(license)
+  if (filter === 'expiring') return license.lifecycle_status !== 'archived' && isExpiring(license)
   if (filter === 'expired') return license.lifecycle_status === 'expired'
-  if (filter === 'high_usage') return utilization(license) >= 80 && license.available_seats > 0
-  return license.available_seats === 0
+  if (filter === 'archived') return license.lifecycle_status === 'archived'
+  if (filter === 'high_usage') return license.lifecycle_status !== 'archived' && utilization(license) >= 80 && license.available_seats > 0
+  return license.lifecycle_status !== 'archived' && license.available_seats === 0
 }
 function daysUntil(value?: string): number | null { if (!value) return null; const today = new Date(); today.setHours(0, 0, 0, 0); const target = new Date(`${value}T00:00:00`); return Math.round((target.getTime() - today.getTime()) / 86400000) }
 function displayStatus(license: LicenseItem): { label: string; tone: string } {
+  if (license.lifecycle_status === 'archived') return { label: 'Đã lưu trữ', tone: 'archived' }
   if (license.lifecycle_status === 'expired') return { label: 'Đã hết hạn', tone: 'expired' }
   if (license.lifecycle_status === 'upcoming') return { label: 'Sắp hiệu lực', tone: 'upcoming' }
   if (license.available_seats === 0) return { label: 'Hết seat', tone: 'exhausted' }

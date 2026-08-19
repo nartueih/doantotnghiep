@@ -9,6 +9,7 @@ Module hỗ trợ license `subscription` và `perpetual`, cấp theo `user`, `de
 | GET | `/api/v1/licenses` | Xem danh sách license và số seat |
 | POST | `/api/v1/licenses` | Tạo license |
 | PUT | `/api/v1/licenses/:id` | Cập nhật license |
+| PATCH | `/api/v1/licenses/:id/archive` | Lưu trữ license không còn cấp phát hoạt động |
 
 Admin và IT Manager được sử dụng các API này. Employee nhận `403 Forbidden`.
 

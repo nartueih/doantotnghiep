@@ -48,6 +48,8 @@ func (r *MemoryRepository) Create(_ context.Context, item Assignment) (Assignmen
 	}
 	if err := r.licenses.ReserveSeat(item.LicenseID); errors.Is(err, licenses.ErrNoAvailableSeats) {
 		return Assignment{}, ErrNoAvailableSeats
+	} else if errors.Is(err, licenses.ErrArchived) {
+		return Assignment{}, ErrLicenseInactive
 	} else if err != nil {
 		return Assignment{}, err
 	}

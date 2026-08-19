@@ -11,7 +11,7 @@ Audit Log ghi lại các thao tác thay đổi dữ liệu quan trọng và vi�
 
 API audit hỗ trợ các query parameter:
 
-- `action`: lọc theo hành động, ví dụ `create`, `update`, `assign`, `revoke`, `view_key`.
+- `action`: lọc theo hành động, ví dụ `create`, `update`, `assign`, `revoke`, `view_key`, `archive`.
 - `entity_type`: lọc theo đối tượng, ví dụ `license`, `device`, `license_assignment`.
 - `actor_id`: lọc theo người thao tác.
 - `limit`: số bản ghi trả về, mặc định 50 và tối đa 200.
@@ -35,6 +35,7 @@ Invoke-RestMethod `
 | `assign` | `device`, `license_assignment` | Giao thiết bị hoặc cấp license |
 | `revoke` | `license_assignment` | Thu hồi license |
 | `view_key` | `license` | Xem plaintext license key |
+| `archive` | `license` | Lưu trữ license không còn cấp phát hoạt động |
 
 ## Quy tắc bảo mật
 

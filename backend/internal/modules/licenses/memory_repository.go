@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"sync"
+	"time"
 )
 
 type MemoryRepository struct {
@@ -36,6 +37,26 @@ func (r *MemoryRepository) FindByID(_ context.Context, licenseID string) (Licens
 	return clone(item), nil
 }
 
+func (r *MemoryRepository) Archive(_ context.Context, licenseID string, archivedAt time.Time) (License, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	item, exists := r.licenses[licenseID]
+	if !exists {
+		return License{}, ErrNotFound
+	}
+	if item.ArchivedAt != nil {
+		return License{}, ErrAlreadyArchived
+	}
+	if item.UsedSeats > 0 {
+		return License{}, ErrActiveAssignments
+	}
+	archivedAt = archivedAt.UTC()
+	item.ArchivedAt = &archivedAt
+	item.UpdatedAt = archivedAt
+	r.licenses[licenseID] = clone(item)
+	return clone(item), nil
+}
+
 func (r *MemoryRepository) Create(_ context.Context, item License) (License, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -49,6 +70,9 @@ func (r *MemoryRepository) Update(_ context.Context, item License) (License, err
 	existing, exists := r.licenses[item.ID]
 	if !exists {
 		return License{}, ErrNotFound
+	}
+	if existing.ArchivedAt != nil {
+		return License{}, ErrArchived
 	}
 	if item.SeatCount < existing.UsedSeats {
 		return License{}, ErrSeatCountBelowUsage
@@ -70,6 +94,9 @@ func (r *MemoryRepository) ReserveSeat(licenseID string) error {
 	item, exists := r.licenses[licenseID]
 	if !exists {
 		return ErrNotFound
+	}
+	if item.ArchivedAt != nil {
+		return ErrArchived
 	}
 	if item.UsedSeats >= item.SeatCount {
 		return ErrNoAvailableSeats

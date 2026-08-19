@@ -31,29 +31,33 @@ var (
 	ErrSeatCountBelowUsage = errors.New("seat count cannot be lower than the number of active assignments")
 	ErrNoAvailableSeats    = errors.New("license has no available seats")
 	ErrKeyNotSet           = errors.New("license key is not configured")
+	ErrArchived            = errors.New("archived license cannot be modified")
+	ErrAlreadyArchived     = errors.New("license is already archived")
+	ErrActiveAssignments   = errors.New("license with active assignments cannot be archived")
 )
 
 type License struct {
-	ID                string    `json:"id"`
-	SoftwareProductID string    `json:"software_product_id"`
-	Name              string    `json:"name"`
-	LicenseType       string    `json:"license_type"`
-	AssignmentType    string    `json:"assignment_type"`
-	SeatCount         int       `json:"seat_count"`
-	UsedSeats         int       `json:"used_seats"`
-	AvailableSeats    int       `json:"available_seats"`
-	EncryptedKey      []byte    `json:"-"`
-	KeyHint           string    `json:"key_hint,omitempty"`
-	Vendor            string    `json:"vendor"`
-	PurchasedAt       string    `json:"purchased_at,omitempty"`
-	StartsAt          string    `json:"starts_at,omitempty"`
-	ExpiresAt         string    `json:"expires_at,omitempty"`
-	Cost              float64   `json:"cost"`
-	Currency          string    `json:"currency,omitempty"`
-	Notes             string    `json:"notes,omitempty"`
-	LifecycleStatus   string    `json:"lifecycle_status"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
+	ID                string     `json:"id"`
+	SoftwareProductID string     `json:"software_product_id"`
+	Name              string     `json:"name"`
+	LicenseType       string     `json:"license_type"`
+	AssignmentType    string     `json:"assignment_type"`
+	SeatCount         int        `json:"seat_count"`
+	UsedSeats         int        `json:"used_seats"`
+	AvailableSeats    int        `json:"available_seats"`
+	EncryptedKey      []byte     `json:"-"`
+	KeyHint           string     `json:"key_hint,omitempty"`
+	Vendor            string     `json:"vendor"`
+	PurchasedAt       string     `json:"purchased_at,omitempty"`
+	StartsAt          string     `json:"starts_at,omitempty"`
+	ExpiresAt         string     `json:"expires_at,omitempty"`
+	Cost              float64    `json:"cost"`
+	Currency          string     `json:"currency,omitempty"`
+	Notes             string     `json:"notes,omitempty"`
+	LifecycleStatus   string     `json:"lifecycle_status"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+	ArchivedAt        *time.Time `json:"archived_at,omitempty"`
 }
 
 type Repository interface {
@@ -61,6 +65,7 @@ type Repository interface {
 	FindByID(context.Context, string) (License, error)
 	Create(context.Context, License) (License, error)
 	Update(context.Context, License) (License, error)
+	Archive(context.Context, string, time.Time) (License, error)
 }
 
 type SoftwareFinder interface {

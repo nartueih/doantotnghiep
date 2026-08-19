@@ -249,6 +249,17 @@
         "responses": { "200": { "description": "Plaintext key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseKeyResponse" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
       }
     },
+    "/api/v1/licenses/{id}/archive": {
+      "patch": {
+        "tags": ["Licenses"],
+        "operationId": "archiveLicense",
+        "summary": "Lưu trữ license",
+        "description": "Chỉ lưu trữ khi license không còn cấp phát đang hoạt động. Dữ liệu và lịch sử vẫn được giữ nguyên.",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "responses": { "200": { "description": "License đã lưu trữ", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/License" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
     "/api/v1/devices": {
       "get": {
         "tags": ["Devices"],
@@ -335,7 +346,7 @@
         "summary": "Tra cứu Audit Log",
         "x-required-roles": ["admin", "it_manager"],
         "parameters": [
-          { "name": "action", "in": "query", "schema": { "type": "string", "enum": ["create", "update", "status_change", "assign", "revoke", "view_key"] } },
+          { "name": "action", "in": "query", "schema": { "type": "string", "enum": ["create", "update", "status_change", "assign", "revoke", "view_key", "archive"] } },
           { "name": "entity_type", "in": "query", "schema": { "type": "string" } },
           { "name": "actor_id", "in": "query", "schema": { "type": "string", "format": "uuid" } },
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 200 } }
@@ -472,8 +483,9 @@
           "key_hint": { "type": "string", "readOnly": true }, "vendor": { "type": "string" },
           "purchased_at": { "type": "string", "format": "date" }, "starts_at": { "type": "string", "format": "date" }, "expires_at": { "type": "string", "format": "date" },
           "cost": { "type": "number", "format": "double" }, "currency": { "type": "string", "minLength": 3, "maxLength": 3 }, "notes": { "type": "string" },
-          "lifecycle_status": { "type": "string", "enum": ["upcoming", "active", "expired"] },
-          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }
+          "lifecycle_status": { "type": "string", "enum": ["upcoming", "active", "expired", "archived"] },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" },
+          "archived_at": { "type": "string", "format": "date-time", "nullable": true, "readOnly": true }
         }
       },
       "LicenseInput": {
@@ -563,7 +575,7 @@
           "assignment_id": { "type": "string", "format": "uuid" }, "license_id": { "type": "string", "format": "uuid" }, "license_name": { "type": "string" },
           "software_product_id": { "type": "string", "format": "uuid" }, "license_type": { "type": "string" }, "assignment_source": { "type": "string", "enum": ["user", "device"] },
           "device_id": { "type": "string", "format": "uuid" }, "device_asset_code": { "type": "string" }, "assigned_at": { "type": "string", "format": "date-time" },
-          "expires_at": { "type": "string", "format": "date" }, "lifecycle_status": { "type": "string", "enum": ["upcoming", "active", "expired"] }, "notes": { "type": "string" }
+          "expires_at": { "type": "string", "format": "date" }, "lifecycle_status": { "type": "string", "enum": ["upcoming", "active", "expired", "archived"] }, "notes": { "type": "string" }
         }
       },
       "UserList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/User" } } } }] },

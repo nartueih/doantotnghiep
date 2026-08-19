@@ -103,6 +103,13 @@ func (s *Service) Update(ctx context.Context, licenseID string, input Input) (Li
 	if err := validateInput(input); err != nil {
 		return License{}, err
 	}
+	existing, err := s.repository.FindByID(ctx, licenseID)
+	if err != nil {
+		return License{}, err
+	}
+	if existing.ArchivedAt != nil {
+		return License{}, ErrArchived
+	}
 	if _, err := s.software.FindByID(ctx, input.SoftwareProductID); errors.Is(err, software.ErrNotFound) {
 		return License{}, ErrSoftwareNotFound
 	} else if err != nil {
@@ -134,6 +141,29 @@ func (s *Service) Update(ctx context.Context, licenseID string, input Input) (Li
 	}
 	s.decorate(&updated)
 	return updated, nil
+}
+
+func (s *Service) Archive(ctx context.Context, licenseID string) (License, error) {
+	licenseID = strings.TrimSpace(licenseID)
+	if licenseID == "" {
+		return License{}, ErrInvalidData
+	}
+	item, err := s.repository.FindByID(ctx, licenseID)
+	if err != nil {
+		return License{}, err
+	}
+	if item.ArchivedAt != nil {
+		return License{}, ErrAlreadyArchived
+	}
+	if item.UsedSeats > 0 {
+		return License{}, ErrActiveAssignments
+	}
+	archived, err := s.repository.Archive(ctx, licenseID, s.now().UTC())
+	if err != nil {
+		return License{}, err
+	}
+	s.decorate(&archived)
+	return archived, nil
 }
 
 func (s *Service) RevealKey(ctx context.Context, licenseID string) (string, error) {
@@ -172,6 +202,8 @@ func (s *Service) decorate(item *License) {
 	item.AvailableSeats = item.SeatCount - item.UsedSeats
 	today := s.now().UTC().Format("2006-01-02")
 	switch {
+	case item.ArchivedAt != nil:
+		item.LifecycleStatus = "archived"
 	case item.StartsAt != "" && item.StartsAt > today:
 		item.LifecycleStatus = "upcoming"
 	case item.ExpiresAt != "" && item.ExpiresAt < today:

@@ -12,6 +12,7 @@ const (
 	ActionAssign       = "assign"
 	ActionRevoke       = "revoke"
 	ActionViewKey      = "view_key"
+	ActionArchive      = "archive"
 
 	EntityUser       = "user"
 	EntityDepartment = "department"
