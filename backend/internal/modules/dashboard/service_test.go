@@ -70,6 +70,31 @@ func TestLicenseAlertsRejectUnsupportedWindow(t *testing.T) {
 	}
 }
 
+func TestArchivedLicensesAreExcludedFromDashboard(t *testing.T) {
+	licenseRepository := licenses.NewMemoryRepository()
+	archivedAt := time.Date(2026, 8, 17, 0, 0, 0, 0, time.UTC)
+	if _, err := licenseRepository.Create(context.Background(), licenses.License{
+		ID: "archived", Name: "Archived", SeatCount: 100, UsedSeats: 100,
+		ExpiresAt: "2026-08-16", Cost: 999, Currency: "USD", ArchivedAt: &archivedAt,
+	}); err != nil {
+		t.Fatalf("create archived license: %v", err)
+	}
+	service := NewService(licenseRepository, devices.NewMemoryRepository(), software.NewMemoryRepository())
+	service.now = func() time.Time { return archivedAt }
+
+	summary, err := service.Summary(context.Background())
+	if err != nil {
+		t.Fatalf("get summary: %v", err)
+	}
+	if summary.TotalLicenses != 0 || summary.TotalSeats != 0 || summary.ExpiredLicenses != 0 || len(summary.CostsByCurrency) != 0 {
+		t.Fatalf("archived license affected summary: %#v", summary)
+	}
+	alerts, err := service.LicenseAlerts(context.Background(), 30)
+	if err != nil || len(alerts) != 0 {
+		t.Fatalf("archived license affected alerts: %#v (error: %v)", alerts, err)
+	}
+}
+
 func newDashboardTestService(t *testing.T) *Service {
 	t.Helper()
 	licenseRepository := licenses.NewMemoryRepository()

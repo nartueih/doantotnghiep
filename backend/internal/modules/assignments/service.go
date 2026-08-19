@@ -58,7 +58,7 @@ func (s *Service) Create(ctx context.Context, actorID string, input CreateInput)
 		return Assignment{}, err
 	}
 	today := s.now().UTC().Format("2006-01-02")
-	if (license.StartsAt != "" && license.StartsAt > today) || (license.ExpiresAt != "" && license.ExpiresAt < today) {
+	if license.ArchivedAt != nil || (license.StartsAt != "" && license.StartsAt > today) || (license.ExpiresAt != "" && license.ExpiresAt < today) {
 		return Assignment{}, ErrLicenseInactive
 	}
 	if license.UsedSeats >= license.SeatCount {

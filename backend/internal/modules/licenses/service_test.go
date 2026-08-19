@@ -117,6 +117,45 @@ func TestListMarksExpiredLicense(t *testing.T) {
 	}
 }
 
+func TestArchiveMarksLicenseAndPreventsFurtherUpdates(t *testing.T) {
+	service, _, _, product := newLicenseTestService(t)
+	ctx := context.Background()
+	created, err := service.Create(ctx, validInput(product.ID))
+	if err != nil {
+		t.Fatalf("create license: %v", err)
+	}
+
+	archived, err := service.Archive(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("archive license: %v", err)
+	}
+	if archived.ArchivedAt == nil || archived.LifecycleStatus != "archived" {
+		t.Fatalf("unexpected archived license: %#v", archived)
+	}
+	if _, err := service.Update(ctx, created.ID, validInput(product.ID)); !errors.Is(err, ErrArchived) {
+		t.Fatalf("expected ErrArchived when updating, got %v", err)
+	}
+	if _, err := service.Archive(ctx, created.ID); !errors.Is(err, ErrAlreadyArchived) {
+		t.Fatalf("expected ErrAlreadyArchived, got %v", err)
+	}
+}
+
+func TestArchiveRejectsLicenseWithActiveAssignments(t *testing.T) {
+	service, repository, _, product := newLicenseTestService(t)
+	ctx := context.Background()
+	created, err := service.Create(ctx, validInput(product.ID))
+	if err != nil {
+		t.Fatalf("create license: %v", err)
+	}
+	if err := repository.ReserveSeat(created.ID); err != nil {
+		t.Fatalf("reserve license seat: %v", err)
+	}
+
+	if _, err := service.Archive(ctx, created.ID); !errors.Is(err, ErrActiveAssignments) {
+		t.Fatalf("expected ErrActiveAssignments, got %v", err)
+	}
+}
+
 func newLicenseTestService(t *testing.T) (*Service, *MemoryRepository, *securevalue.Cipher, software.Product) {
 	t.Helper()
 	softwareRepository := software.NewMemoryRepository()

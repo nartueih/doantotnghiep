@@ -48,6 +48,7 @@ func TestOpenAPISpecIsValidJSONAndContainsEveryAPIArea(t *testing.T) {
 		"/api/v1/licenses",
 		"/api/v1/licenses/{id}",
 		"/api/v1/licenses/{id}/key",
+		"/api/v1/licenses/{id}/archive",
 		"/api/v1/devices",
 		"/api/v1/devices/{id}",
 		"/api/v1/devices/{id}/status",

@@ -30,6 +30,22 @@ func (h *HTTPHandler) RegisterRoutes(v1 *gin.RouterGroup) {
 	routes.GET("/:id/key", h.revealKey)
 	routes.POST("", h.create)
 	routes.PUT("/:id", h.update)
+	routes.PATCH("/:id/archive", h.archive)
+}
+
+func (h *HTTPHandler) archive(c *gin.Context) {
+	item, err := h.service.Archive(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		writeLicenseError(c, err)
+		return
+	}
+	if err := audit.RecordRequest(c, h.audit, audit.ActionArchive, audit.EntityLicense, item.ID, map[string]any{
+		"name": item.Name, "software_product_id": item.SoftwareProductID,
+	}); err != nil {
+		audit.WriteError(c)
+		return
+	}
+	c.JSON(http.StatusOK, item)
 }
 
 func (h *HTTPHandler) list(c *gin.Context) {
@@ -144,7 +160,10 @@ func writeLicenseError(c *gin.Context, err error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, ErrSoftwareNotFound), errors.Is(err, ErrNotFound), errors.Is(err, ErrKeyNotSet):
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-	case errors.Is(err, ErrSeatCountBelowUsage):
+	case errors.Is(err, ErrSeatCountBelowUsage),
+		errors.Is(err, ErrArchived),
+		errors.Is(err, ErrAlreadyArchived),
+		errors.Is(err, ErrActiveAssignments):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})

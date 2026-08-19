@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"license-manager/backend/internal/modules/auth"
 	"license-manager/backend/internal/modules/devices"
@@ -136,6 +137,22 @@ func TestExactlyOneTargetIsRequired(t *testing.T) {
 	})
 	if !errors.Is(err, ErrInvalidTarget) {
 		t.Fatalf("expected ErrInvalidTarget, got %v", err)
+	}
+}
+
+func TestArchivedLicenseCannotBeAssigned(t *testing.T) {
+	fixture := newAssignmentFixture(t, 1, licenses.AssignmentUser)
+	ctx := context.Background()
+	if _, err := fixture.licenseRepository.Archive(ctx, fixture.license.ID, time.Now()); err != nil {
+		t.Fatalf("archive license: %v", err)
+	}
+
+	_, err := fixture.service.Create(ctx, fixture.admin.ID, CreateInput{
+		LicenseID: fixture.license.ID,
+		UserID:    fixture.employee1.ID,
+	})
+	if !errors.Is(err, ErrLicenseInactive) {
+		t.Fatalf("expected ErrLicenseInactive, got %v", err)
 	}
 }
 

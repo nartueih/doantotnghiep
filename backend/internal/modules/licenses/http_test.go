@@ -100,6 +100,41 @@ func TestRevealKeyCreatesAuditLog(t *testing.T) {
 	}
 }
 
+func TestArchiveCreatesAuditLog(t *testing.T) {
+	router, token, productID, auditService := newLicenseHTTPTestRouter(t, auth.RoleAdmin)
+	createResponse := httptest.NewRecorder()
+	createRequest := httptest.NewRequest(http.MethodPost, "/api/v1/licenses", bytes.NewBufferString(`{
+		"software_product_id":"`+productID+`",
+		"name":"Archive Me",
+		"license_type":"perpetual",
+		"assignment_type":"mixed",
+		"seat_count":2
+	}`))
+	createRequest.Header.Set("Content-Type", "application/json")
+	createRequest.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(createResponse, createRequest)
+	if createResponse.Code != http.StatusCreated {
+		t.Fatalf("create license: %d: %s", createResponse.Code, createResponse.Body.String())
+	}
+	var created License
+	if err := json.Unmarshal(createResponse.Body.Bytes(), &created); err != nil {
+		t.Fatalf("decode created license: %v", err)
+	}
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPatch, "/api/v1/licenses/"+created.ID+"/archive", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"lifecycle_status":"archived"`) {
+		t.Fatalf("archive license: %d: %s", response.Code, response.Body.String())
+	}
+
+	items, err := auditService.List(context.Background(), audit.Filter{Action: audit.ActionArchive})
+	if err != nil || len(items) != 1 || items[0].EntityID != created.ID {
+		t.Fatalf("expected one archive audit log, got %#v (error: %v)", items, err)
+	}
+}
+
 func newLicenseHTTPTestRouter(t *testing.T, role string) (http.Handler, string, string, *audit.Service) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)

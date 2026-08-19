@@ -48,10 +48,14 @@ func (r *PostgresRepository) Create(ctx context.Context, item Assignment) (Assig
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	var seatCount int
-	if err := tx.QueryRow(ctx, `SELECT seat_count FROM licenses WHERE id = $1 FOR UPDATE`, item.LicenseID).Scan(&seatCount); errors.Is(err, pgx.ErrNoRows) {
+	var archivedAt *time.Time
+	if err := tx.QueryRow(ctx, `SELECT seat_count, archived_at FROM licenses WHERE id = $1 FOR UPDATE`, item.LicenseID).Scan(&seatCount, &archivedAt); errors.Is(err, pgx.ErrNoRows) {
 		return Assignment{}, ErrLicenseNotFound
 	} else if err != nil {
 		return Assignment{}, fmt.Errorf("lock license: %w", err)
+	}
+	if archivedAt != nil {
+		return Assignment{}, ErrLicenseInactive
 	}
 	var usedSeats int
 	if err := tx.QueryRow(ctx, `

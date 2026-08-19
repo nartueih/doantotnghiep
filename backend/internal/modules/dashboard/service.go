@@ -44,7 +44,7 @@ func (s *Service) Summary(ctx context.Context) (Summary, error) {
 		TotalDevices:          len(deviceItems),
 		DevicesByStatus:       make(map[string]int),
 		TotalSoftwareProducts: len(softwareItems),
-		TotalLicenses:         len(licenseItems),
+		TotalLicenses:         0,
 		CostsByCurrency:       make([]CostByCurrency, 0),
 		GeneratedAt:           s.now().UTC(),
 	}
@@ -54,6 +54,10 @@ func (s *Service) Summary(ctx context.Context) (Summary, error) {
 
 	costs := make(map[string]float64)
 	for _, item := range licenseItems {
+		if item.ArchivedAt != nil {
+			continue
+		}
+		result.TotalLicenses++
 		result.TotalSeats += item.SeatCount
 		result.UsedSeats += item.UsedSeats
 		result.AvailableSeats += max(item.SeatCount-item.UsedSeats, 0)
@@ -106,6 +110,9 @@ func (s *Service) LicenseAlerts(ctx context.Context, expiryWindow int) ([]Licens
 	today := startOfDay(s.now())
 	alerts := make([]LicenseAlert, 0)
 	for _, item := range items {
+		if item.ArchivedAt != nil {
+			continue
+		}
 		alert, include := buildAlert(today, expiryWindow, item)
 		if include {
 			alerts = append(alerts, alert)

@@ -1,6 +1,6 @@
 export type LicenseType = 'subscription' | 'perpetual'
 export type AssignmentType = 'user' | 'device' | 'mixed'
-export type LicenseLifecycle = 'active' | 'expired' | 'upcoming'
+export type LicenseLifecycle = 'active' | 'expired' | 'upcoming' | 'archived'
 
 export interface LicenseItem {
   id: string
@@ -22,6 +22,7 @@ export interface LicenseItem {
   lifecycle_status: LicenseLifecycle
   created_at: string
   updated_at: string
+  archived_at?: string
 }
 
 export interface SoftwareProduct {
@@ -119,4 +120,8 @@ export function updateLicense(accessToken: string, licenseID: string, input: Lic
     method: 'PUT',
     body: JSON.stringify(input),
   })
+}
+
+export function archiveLicense(accessToken: string, licenseID: string): Promise<LicenseItem> {
+  return request(`/licenses/${licenseID}/archive`, accessToken, { method: 'PATCH' })
 }

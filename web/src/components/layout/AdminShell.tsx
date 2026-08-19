@@ -5,7 +5,7 @@ import './AdminShell.css'
 export type AdminPage = 'dashboard' | 'licenses'
 export type IconName = 'grid' | 'software' | 'key' | 'assignment' | 'device' | 'users' |
   'department' | 'audit' | 'bell' | 'refresh' | 'search' | 'chevron' | 'trend' |
-  'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'close'
+  'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'archive' | 'close'
 
 interface AdminShellProps {
   session: AuthSession
@@ -140,6 +140,7 @@ export function Icon({ name }: { name: IconName }) {
     filter: <path d="M4 5h16l-6 7v5l-4 2v-7z" />,
     eye: <><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>,
     edit: <><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4z" /></>,
+    archive: <><path d="M4 8v12h16V8M3 4h18v4H3zM9 12h6" /></>,
     close: <path d="M6 6l12 12M18 6L6 18" />,
   }
   return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>
