@@ -2,6 +2,8 @@
 
 Module dùng memory storage nên chưa yêu cầu database. Admin và IT Manager được quản lý danh mục; Employee không có quyền truy cập.
 
+Sau khi kiểm tra API, có thể tiếp tục với [kịch bản kiểm thử giao diện quản lý phần mềm](web-software-management-testing.md).
+
 ## API
 
 | Method | Endpoint | Chức năng |

@@ -29,6 +29,8 @@ Giao diện quản trị người dùng được kiểm tra theo [hướng dẫn
 
 Danh mục sản phẩm phần mềm được kiểm tra theo [hướng dẫn software catalog](docs/software-catalog-testing.md).
 
+Giao diện quản trị phần mềm được kiểm tra theo [hướng dẫn Web Software Management](docs/web-software-management-testing.md).
+
 Quy tắc và mã hóa license được kiểm tra theo [hướng dẫn license management](docs/license-management-testing.md).
 
 Quy trình lưu trữ license an toàn được kiểm tra theo [hướng dẫn license archiving](docs/license-archiving-testing.md).

@@ -6,6 +6,7 @@ import { DashboardScreen } from './features/dashboard/DashboardScreen'
 import { DepartmentManagementScreen } from './features/departments/DepartmentManagementScreen'
 import { DeviceManagementScreen } from './features/devices/DeviceManagementScreen'
 import { LicenseManagementScreen } from './features/licenses/LicenseManagementScreen'
+import { SoftwareManagementScreen } from './features/software/SoftwareManagementScreen'
 import { UserManagementScreen } from './features/users/UserManagementScreen'
 import {
   APIError,
@@ -18,6 +19,7 @@ const SESSION_KEY = 'enterprise-license-manager.session'
 
 function pageFromHash(): AdminPage {
   if (window.location.hash === '#/licenses') return 'licenses'
+  if (window.location.hash === '#/software') return 'software'
   if (window.location.hash === '#/assignments') return 'assignments'
   if (window.location.hash === '#/devices') return 'devices'
   if (window.location.hash === '#/users') return 'users'
@@ -66,6 +68,9 @@ function App() {
   }
 
   if (session) {
+    if (adminPage === 'software') {
+      return <SoftwareManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
+    }
     if (adminPage === 'licenses') {
       return <LicenseManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
     }

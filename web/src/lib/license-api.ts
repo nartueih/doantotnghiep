@@ -2,6 +2,9 @@ export type LicenseType = 'subscription' | 'perpetual'
 export type AssignmentType = 'user' | 'device' | 'mixed'
 export type LicenseLifecycle = 'active' | 'expired' | 'upcoming' | 'archived'
 
+export { getSoftwareProducts } from './software-api'
+export type { SoftwareProduct } from './software-api'
+
 export interface LicenseItem {
   id: string
   software_product_id: string
@@ -23,14 +26,6 @@ export interface LicenseItem {
   created_at: string
   updated_at: string
   archived_at?: string
-}
-
-export interface SoftwareProduct {
-  id: string
-  name: string
-  publisher: string
-  version: string
-  description: string
 }
 
 export interface LicenseInput {
@@ -97,10 +92,6 @@ async function request<T>(path: string, accessToken: string, init?: RequestInit)
 
 export function getLicenses(accessToken: string): Promise<ListResult<LicenseItem>> {
   return request('/licenses', accessToken)
-}
-
-export function getSoftwareProducts(accessToken: string): Promise<ListResult<SoftwareProduct>> {
-  return request('/software', accessToken)
 }
 
 export async function revealLicenseKey(accessToken: string, licenseID: string): Promise<string> {
