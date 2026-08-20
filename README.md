@@ -33,6 +33,8 @@ Quy trình lưu trữ license an toàn được kiểm tra theo [hướng dẫn 
 
 Quy trình tạo, bàn giao và thu hồi thiết bị nằm trong [hướng dẫn device management](docs/device-management-testing.md).
 
+Giao diện quản trị thiết bị được kiểm tra theo [hướng dẫn Web Device Management](docs/web-device-management-testing.md).
+
 Luồng sử dụng seat, cấp phát và thu hồi license nằm trong [hướng dẫn license assignment](docs/license-assignment-testing.md).
 
 Giao diện quản trị cấp phát được kiểm tra theo [hướng dẫn Web Assignment Management](docs/web-assignment-management-testing.md).

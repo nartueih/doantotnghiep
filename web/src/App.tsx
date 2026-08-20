@@ -3,6 +3,7 @@ import './App.css'
 import type { AdminPage } from './components/layout/AdminShell'
 import { AssignmentManagementScreen } from './features/assignments/AssignmentManagementScreen'
 import { DashboardScreen } from './features/dashboard/DashboardScreen'
+import { DeviceManagementScreen } from './features/devices/DeviceManagementScreen'
 import { LicenseManagementScreen } from './features/licenses/LicenseManagementScreen'
 import {
   APIError,
@@ -16,6 +17,7 @@ const SESSION_KEY = 'enterprise-license-manager.session'
 function pageFromHash(): AdminPage {
   if (window.location.hash === '#/licenses') return 'licenses'
   if (window.location.hash === '#/assignments') return 'assignments'
+  if (window.location.hash === '#/devices') return 'devices'
   return 'dashboard'
 }
 
@@ -65,6 +67,9 @@ function App() {
     }
     if (adminPage === 'assignments') {
       return <AssignmentManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
+    }
+    if (adminPage === 'devices') {
+      return <DeviceManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
     }
     return <DashboardScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
   }

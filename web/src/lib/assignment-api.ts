@@ -1,5 +1,8 @@
 import type { AuthUser } from './auth-api'
+import type { DeviceItem } from './device-api'
 import type { LicenseItem } from './license-api'
+
+export type { DeviceItem } from './device-api'
 
 export type AssignmentStatus = 'active' | 'revoked'
 
@@ -18,19 +21,6 @@ export interface AssignmentItem {
   revoked_by_name?: string
   status: AssignmentStatus
   notes?: string
-}
-
-export interface DeviceItem {
-  id: string
-  assigned_user_id?: string
-  assigned_user_name?: string
-  asset_code: string
-  serial_number?: string
-  name: string
-  device_type: string
-  manufacturer?: string
-  model?: string
-  status: 'available' | 'assigned' | 'maintenance' | 'retired' | 'lost'
 }
 
 export interface AssignmentInput {
