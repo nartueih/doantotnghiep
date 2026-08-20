@@ -25,6 +25,8 @@ Nếu chưa có Docker hoặc database, làm lần lượt theo [hướng dẫn 
 
 Sau khi kiểm tra Authentication, tiếp tục với [hướng dẫn kiểm tra quản lý người dùng](docs/user-management-testing.md).
 
+Giao diện quản trị người dùng được kiểm tra theo [hướng dẫn Web User Management](docs/web-user-management-testing.md).
+
 Danh mục sản phẩm phần mềm được kiểm tra theo [hướng dẫn software catalog](docs/software-catalog-testing.md).
 
 Quy tắc và mã hóa license được kiểm tra theo [hướng dẫn license management](docs/license-management-testing.md).
