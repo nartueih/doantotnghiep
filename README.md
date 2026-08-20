@@ -49,6 +49,8 @@ Giao diện quản trị phòng ban được kiểm tra theo [hướng dẫn Web
 
 Nhật ký thao tác và quy tắc bảo vệ dữ liệu nhạy cảm nằm trong [hướng dẫn Audit Log](docs/audit-log-testing.md).
 
+Giao diện xem và lọc nhật ký hoạt động được kiểm tra theo [hướng dẫn Web Audit Log](docs/web-audit-log-testing.md).
+
 Số liệu tổng quan, chi phí và cảnh báo license nằm trong [hướng dẫn Dashboard & Alerts](docs/dashboard-alerts-testing.md).
 
 Luồng nhân viên tự xem thiết bị và license của mình nằm trong [hướng dẫn Employee Self-service](docs/employee-self-service-testing.md).

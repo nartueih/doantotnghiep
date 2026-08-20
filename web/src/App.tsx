@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import './App.css'
 import type { AdminPage } from './components/layout/AdminShell'
 import { AssignmentManagementScreen } from './features/assignments/AssignmentManagementScreen'
+import { AuditLogScreen } from './features/audit/AuditLogScreen'
 import { DashboardScreen } from './features/dashboard/DashboardScreen'
 import { DepartmentManagementScreen } from './features/departments/DepartmentManagementScreen'
 import { DeviceManagementScreen } from './features/devices/DeviceManagementScreen'
@@ -24,6 +25,7 @@ function pageFromHash(): AdminPage {
   if (window.location.hash === '#/devices') return 'devices'
   if (window.location.hash === '#/users') return 'users'
   if (window.location.hash === '#/departments') return 'departments'
+  if (window.location.hash === '#/audit') return 'audit'
   return 'dashboard'
 }
 
@@ -85,6 +87,9 @@ function App() {
     }
     if (adminPage === 'departments') {
       return <DepartmentManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
+    }
+    if (adminPage === 'audit') {
+      return <AuditLogScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
     }
     return <DashboardScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
   }
