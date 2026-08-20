@@ -27,6 +27,14 @@ type AssignedLicense struct {
 	ExpiresAt         string    `json:"expires_at,omitempty"`
 	LifecycleStatus   string    `json:"lifecycle_status"`
 	Notes             string    `json:"notes,omitempty"`
+	CanViewKey        bool      `json:"can_view_key"`
+}
+
+type LicenseKeyAccess struct {
+	AssignmentID string `json:"assignment_id"`
+	LicenseID    string `json:"license_id"`
+	LicenseName  string `json:"license_name"`
+	LicenseKey   string `json:"license_key"`
 }
 
 type DeviceLister interface {
@@ -39,4 +47,8 @@ type AssignmentLister interface {
 
 type LicenseLister interface {
 	List(context.Context) ([]licenses.License, error)
+}
+
+type LicenseKeyRevealer interface {
+	RevealEmployeeKey(context.Context, string) (string, error)
 }

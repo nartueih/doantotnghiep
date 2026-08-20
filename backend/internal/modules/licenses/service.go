@@ -13,19 +13,20 @@ import (
 )
 
 type Input struct {
-	SoftwareProductID string
-	Name              string
-	LicenseType       string
-	AssignmentType    string
-	SeatCount         int
-	LicenseKey        string
-	Vendor            string
-	PurchasedAt       string
-	StartsAt          string
-	ExpiresAt         string
-	Cost              float64
-	Currency          string
-	Notes             string
+	SoftwareProductID    string
+	Name                 string
+	LicenseType          string
+	AssignmentType       string
+	SeatCount            int
+	LicenseKey           string
+	AllowEmployeeKeyView bool
+	Vendor               string
+	PurchasedAt          string
+	StartsAt             string
+	ExpiresAt            string
+	Cost                 float64
+	Currency             string
+	Notes                string
 }
 
 type Service struct {
@@ -67,22 +68,23 @@ func (s *Service) Create(ctx context.Context, input Input) (License, error) {
 	}
 	now := s.now().UTC()
 	item := License{
-		ID:                licenseID,
-		SoftwareProductID: input.SoftwareProductID,
-		Name:              input.Name,
-		LicenseType:       input.LicenseType,
-		AssignmentType:    input.AssignmentType,
-		SeatCount:         input.SeatCount,
-		AvailableSeats:    input.SeatCount,
-		Vendor:            input.Vendor,
-		PurchasedAt:       input.PurchasedAt,
-		StartsAt:          input.StartsAt,
-		ExpiresAt:         input.ExpiresAt,
-		Cost:              input.Cost,
-		Currency:          input.Currency,
-		Notes:             input.Notes,
-		CreatedAt:         now,
-		UpdatedAt:         now,
+		ID:                   licenseID,
+		SoftwareProductID:    input.SoftwareProductID,
+		Name:                 input.Name,
+		LicenseType:          input.LicenseType,
+		AssignmentType:       input.AssignmentType,
+		SeatCount:            input.SeatCount,
+		AvailableSeats:       input.SeatCount,
+		AllowEmployeeKeyView: input.AllowEmployeeKeyView,
+		Vendor:               input.Vendor,
+		PurchasedAt:          input.PurchasedAt,
+		StartsAt:             input.StartsAt,
+		ExpiresAt:            input.ExpiresAt,
+		Cost:                 input.Cost,
+		Currency:             input.Currency,
+		Notes:                input.Notes,
+		CreatedAt:            now,
+		UpdatedAt:            now,
 	}
 	if err := s.protectKey(&item, input.LicenseKey); err != nil {
 		return License{}, err
@@ -117,20 +119,21 @@ func (s *Service) Update(ctx context.Context, licenseID string, input Input) (Li
 	}
 
 	item := License{
-		ID:                licenseID,
-		SoftwareProductID: input.SoftwareProductID,
-		Name:              input.Name,
-		LicenseType:       input.LicenseType,
-		AssignmentType:    input.AssignmentType,
-		SeatCount:         input.SeatCount,
-		Vendor:            input.Vendor,
-		PurchasedAt:       input.PurchasedAt,
-		StartsAt:          input.StartsAt,
-		ExpiresAt:         input.ExpiresAt,
-		Cost:              input.Cost,
-		Currency:          input.Currency,
-		Notes:             input.Notes,
-		UpdatedAt:         s.now().UTC(),
+		ID:                   licenseID,
+		SoftwareProductID:    input.SoftwareProductID,
+		Name:                 input.Name,
+		LicenseType:          input.LicenseType,
+		AssignmentType:       input.AssignmentType,
+		SeatCount:            input.SeatCount,
+		AllowEmployeeKeyView: input.AllowEmployeeKeyView,
+		Vendor:               input.Vendor,
+		PurchasedAt:          input.PurchasedAt,
+		StartsAt:             input.StartsAt,
+		ExpiresAt:            input.ExpiresAt,
+		Cost:                 input.Cost,
+		Currency:             input.Currency,
+		Notes:                input.Notes,
+		UpdatedAt:            s.now().UTC(),
 	}
 	if err := s.protectKey(&item, input.LicenseKey); err != nil {
 		return License{}, err
@@ -181,6 +184,32 @@ func (s *Service) RevealKey(ctx context.Context, licenseID string) (string, erro
 	plaintext, err := s.cipher.Decrypt(item.EncryptedKey)
 	if err != nil {
 		return "", fmt.Errorf("decrypt license key: %w", err)
+	}
+	return plaintext, nil
+}
+
+func (s *Service) RevealEmployeeKey(ctx context.Context, licenseID string) (string, error) {
+	licenseID = strings.TrimSpace(licenseID)
+	if licenseID == "" {
+		return "", ErrInvalidData
+	}
+	item, err := s.repository.FindByID(ctx, licenseID)
+	if err != nil {
+		return "", err
+	}
+	s.decorate(&item)
+	if !item.AllowEmployeeKeyView {
+		return "", ErrEmployeeKeyNotAllowed
+	}
+	if item.LifecycleStatus != "active" {
+		return "", ErrKeyUnavailable
+	}
+	if len(item.EncryptedKey) == 0 {
+		return "", ErrKeyNotSet
+	}
+	plaintext, err := s.cipher.Decrypt(item.EncryptedKey)
+	if err != nil {
+		return "", fmt.Errorf("decrypt employee license key: %w", err)
 	}
 	return plaintext, nil
 }

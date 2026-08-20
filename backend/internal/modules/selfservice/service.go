@@ -2,6 +2,7 @@ package selfservice
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strings"
 	"time"
@@ -11,15 +12,25 @@ import (
 	"license-manager/backend/internal/modules/licenses"
 )
 
+var (
+	ErrAssignmentNotFound   = errors.New("active license assignment not found")
+	ErrKeyAccessUnavailable = errors.New("employee key access service is unavailable")
+)
+
 type Service struct {
 	devices     DeviceLister
 	assignments AssignmentLister
 	licenses    LicenseLister
+	keyRevealer LicenseKeyRevealer
 	now         func() time.Time
 }
 
-func NewService(deviceLister DeviceLister, assignmentLister AssignmentLister, licenseLister LicenseLister) *Service {
-	return &Service{devices: deviceLister, assignments: assignmentLister, licenses: licenseLister, now: time.Now}
+func NewService(deviceLister DeviceLister, assignmentLister AssignmentLister, licenseLister LicenseLister, keyRevealers ...LicenseKeyRevealer) *Service {
+	service := &Service{devices: deviceLister, assignments: assignmentLister, licenses: licenseLister, now: time.Now}
+	if len(keyRevealers) > 0 {
+		service.keyRevealer = keyRevealers[0]
+	}
+	return service
 }
 
 func (s *Service) Devices(ctx context.Context, currentUserID string) ([]devices.Device, error) {
@@ -106,6 +117,7 @@ func (s *Service) Licenses(ctx context.Context, currentUserID string) ([]Assigne
 			ExpiresAt:         license.ExpiresAt,
 			LifecycleStatus:   lifecycleStatus,
 			Notes:             item.Notes,
+			CanViewKey:        license.AllowEmployeeKeyView && len(license.EncryptedKey) > 0 && lifecycleStatus == "active",
 		})
 	}
 	sort.Slice(result, func(i, j int) bool {
@@ -115,6 +127,54 @@ func (s *Service) Licenses(ctx context.Context, currentUserID string) ([]Assigne
 		return result[i].AssignmentID < result[j].AssignmentID
 	})
 	return result, nil
+}
+
+func (s *Service) RevealLicenseKey(ctx context.Context, currentUserID, assignmentID string) (LicenseKeyAccess, error) {
+	currentUserID = strings.TrimSpace(currentUserID)
+	assignmentID = strings.TrimSpace(assignmentID)
+	if currentUserID == "" || assignmentID == "" {
+		return LicenseKeyAccess{}, ErrAssignmentNotFound
+	}
+	if s.keyRevealer == nil {
+		return LicenseKeyAccess{}, ErrKeyAccessUnavailable
+	}
+
+	deviceItems, err := s.Devices(ctx, currentUserID)
+	if err != nil {
+		return LicenseKeyAccess{}, err
+	}
+	ownedDevices := make(map[string]struct{}, len(deviceItems))
+	for _, item := range deviceItems {
+		ownedDevices[item.ID] = struct{}{}
+	}
+
+	assignmentItems, err := s.assignments.List(ctx)
+	if err != nil {
+		return LicenseKeyAccess{}, err
+	}
+	for _, item := range assignmentItems {
+		if item.ID != assignmentID || item.Status != assignments.StatusActive {
+			continue
+		}
+		owned := item.UserID == currentUserID
+		if !owned && item.DeviceID != "" {
+			_, owned = ownedDevices[item.DeviceID]
+		}
+		if !owned {
+			break
+		}
+		licenseKey, revealErr := s.keyRevealer.RevealEmployeeKey(ctx, item.LicenseID)
+		if revealErr != nil {
+			return LicenseKeyAccess{}, revealErr
+		}
+		return LicenseKeyAccess{
+			AssignmentID: item.ID,
+			LicenseID:    item.LicenseID,
+			LicenseName:  item.LicenseName,
+			LicenseKey:   licenseKey,
+		}, nil
+	}
+	return LicenseKeyAccess{}, ErrAssignmentNotFound
 }
 
 func calculateLifecycleStatus(now time.Time, startsAt, expiresAt string) string {

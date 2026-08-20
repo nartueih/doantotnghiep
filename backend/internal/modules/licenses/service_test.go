@@ -98,6 +98,55 @@ func TestRevealKeyDecryptsStoredValue(t *testing.T) {
 	}
 }
 
+func TestRevealEmployeeKeyRequiresExplicitPermission(t *testing.T) {
+	service, _, _, product := newLicenseTestService(t)
+	input := validInput(product.ID)
+	input.AllowEmployeeKeyView = false
+	created, err := service.Create(context.Background(), input)
+	if err != nil {
+		t.Fatalf("create license: %v", err)
+	}
+
+	if _, err := service.RevealEmployeeKey(context.Background(), created.ID); !errors.Is(err, ErrEmployeeKeyNotAllowed) {
+		t.Fatalf("expected ErrEmployeeKeyNotAllowed, got %v", err)
+	}
+}
+
+func TestRevealEmployeeKeyReturnsKeyForAllowedActiveLicense(t *testing.T) {
+	service, _, _, product := newLicenseTestService(t)
+	input := validInput(product.ID)
+	input.AllowEmployeeKeyView = true
+	created, err := service.Create(context.Background(), input)
+	if err != nil {
+		t.Fatalf("create license: %v", err)
+	}
+
+	plaintext, err := service.RevealEmployeeKey(context.Background(), created.ID)
+	if err != nil {
+		t.Fatalf("reveal employee key: %v", err)
+	}
+	if plaintext != input.LicenseKey {
+		t.Fatalf("unexpected employee key %q", plaintext)
+	}
+}
+
+func TestRevealEmployeeKeyRejectsExpiredLicense(t *testing.T) {
+	service, _, _, product := newLicenseTestService(t)
+	service.now = func() time.Time { return time.Date(2026, 8, 17, 0, 0, 0, 0, time.UTC) }
+	input := validInput(product.ID)
+	input.AllowEmployeeKeyView = true
+	input.StartsAt = "2025-01-01"
+	input.ExpiresAt = "2026-08-16"
+	created, err := service.Create(context.Background(), input)
+	if err != nil {
+		t.Fatalf("create expired license: %v", err)
+	}
+
+	if _, err := service.RevealEmployeeKey(context.Background(), created.ID); !errors.Is(err, ErrKeyUnavailable) {
+		t.Fatalf("expected ErrKeyUnavailable, got %v", err)
+	}
+}
+
 func TestListMarksExpiredLicense(t *testing.T) {
 	service, _, _, product := newLicenseTestService(t)
 	service.now = func() time.Time { return time.Date(2026, 8, 17, 0, 0, 0, 0, time.UTC) }

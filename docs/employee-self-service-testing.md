@@ -9,6 +9,7 @@ Self-service cho phép người dùng đã đăng nhập xem thiết bị và li
 | GET | `/api/v1/auth/me` | Xem thông tin tài khoản hiện tại |
 | GET | `/api/v1/me/devices` | Xem thiết bị đang được giao |
 | GET | `/api/v1/me/licenses` | Xem license đang được cấp |
+| GET | `/api/v1/me/licenses/:assignment_id/key` | Xem activation key khi IT đã cho phép |
 
 ## Nguồn cấp license
 
@@ -21,7 +22,9 @@ Self-service cho phép người dùng đã đăng nhập xem thiết bị và li
 - Query như `?user_id=...` bị bỏ qua hoàn toàn.
 - Chỉ assignment có trạng thái `active` được hiển thị.
 - Không trả license của user khác hoặc thiết bị của user khác.
-- Không trả plaintext, ciphertext hoặc key hint của license.
+- API danh sách không trả plaintext, ciphertext hoặc key hint của license; chỉ trả `can_view_key`.
+- Endpoint xem key kiểm tra assignment thuộc user/thiết bị hiện tại, license đang hiệu lực và `allow_employee_key_view=true`.
+- Mỗi lần xem key thành công được ghi vào Audit Log và không ghi plaintext vào metadata.
 
 ## Ví dụ
 

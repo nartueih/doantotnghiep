@@ -57,6 +57,8 @@ Luồng nhân viên tự xem thiết bị và license của mình nằm trong [h
 
 Giao diện cổng thông tin riêng cho nhân viên được kiểm tra theo [hướng dẫn Web Employee Portal](docs/web-employee-portal-testing.md).
 
+Quyền xem activation key có kiểm soát cho Employee được kiểm tra theo [hướng dẫn Employee License Key Access](docs/employee-license-key-testing.md).
+
 Hợp đồng API và cách sử dụng Swagger UI nằm trong [hướng dẫn OpenAPI](docs/openapi-testing.md).
 
 Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.

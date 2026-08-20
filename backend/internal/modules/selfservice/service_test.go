@@ -2,6 +2,7 @@ package selfservice
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -9,6 +10,18 @@ import (
 	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenses"
 )
+
+type selfServiceKeyRevealer struct {
+	keys map[string]string
+}
+
+func (r selfServiceKeyRevealer) RevealEmployeeKey(_ context.Context, licenseID string) (string, error) {
+	key, exists := r.keys[licenseID]
+	if !exists {
+		return "", licenses.ErrEmployeeKeyNotAllowed
+	}
+	return key, nil
+}
 
 func TestDevicesReturnsOnlyCurrentUsersDevices(t *testing.T) {
 	service := newSelfServiceTestService(t)
@@ -53,6 +66,32 @@ func TestEmptyUserIDReturnsNoUnassignedDevices(t *testing.T) {
 	}
 }
 
+func TestRevealLicenseKeyAllowsDirectAndOwnedDeviceAssignments(t *testing.T) {
+	service := newSelfServiceTestService(t)
+
+	for assignmentID, expectedKey := range map[string]string{
+		"assignment-user":   "DIRECT-KEY",
+		"assignment-device": "DEVICE-KEY",
+	} {
+		access, err := service.RevealLicenseKey(context.Background(), "user-1", assignmentID)
+		if err != nil {
+			t.Fatalf("reveal %s: %v", assignmentID, err)
+		}
+		if access.LicenseKey != expectedKey || access.AssignmentID != assignmentID {
+			t.Fatalf("unexpected access for %s: %#v", assignmentID, access)
+		}
+	}
+}
+
+func TestRevealLicenseKeyRejectsOtherAndRevokedAssignments(t *testing.T) {
+	service := newSelfServiceTestService(t)
+	for _, assignmentID := range []string{"assignment-other", "assignment-revoked", "missing"} {
+		if _, err := service.RevealLicenseKey(context.Background(), "user-1", assignmentID); !errors.Is(err, ErrAssignmentNotFound) {
+			t.Fatalf("expected ErrAssignmentNotFound for %s, got %v", assignmentID, err)
+		}
+	}
+}
+
 func newSelfServiceTestService(t *testing.T) *Service {
 	t.Helper()
 	ctx := context.Background()
@@ -61,8 +100,8 @@ func newSelfServiceTestService(t *testing.T) *Service {
 	assignmentRepository := assignments.NewMemoryRepository(licenseRepository)
 
 	for _, item := range []licenses.License{
-		{ID: "license-user", Name: "Direct License", LicenseType: licenses.TypeSubscription, SeatCount: 3, ExpiresAt: "2099-01-01"},
-		{ID: "license-device", Name: "Device License", LicenseType: licenses.TypePerpetual, SeatCount: 3},
+		{ID: "license-user", Name: "Direct License", LicenseType: licenses.TypeSubscription, SeatCount: 3, ExpiresAt: "2099-01-01", AllowEmployeeKeyView: true, EncryptedKey: []byte{1}},
+		{ID: "license-device", Name: "Device License", LicenseType: licenses.TypePerpetual, SeatCount: 3, AllowEmployeeKeyView: true, EncryptedKey: []byte{1}},
 		{ID: "license-other", Name: "Other User License", LicenseType: licenses.TypePerpetual, SeatCount: 3},
 		{ID: "license-revoked", Name: "Revoked License", LicenseType: licenses.TypePerpetual, SeatCount: 3},
 	} {
@@ -96,7 +135,9 @@ func newSelfServiceTestService(t *testing.T) *Service {
 		t.Fatalf("revoke assignment: %v", err)
 	}
 
-	service := NewService(deviceRepository, assignmentRepository, licenseRepository)
+	service := NewService(deviceRepository, assignmentRepository, licenseRepository, selfServiceKeyRevealer{keys: map[string]string{
+		"license-user": "DIRECT-KEY", "license-device": "DEVICE-KEY",
+	}})
 	service.now = func() time.Time { return assignedAt }
 	return service
 }

@@ -60,6 +60,7 @@ func TestOpenAPISpecIsValidJSONAndContainsEveryAPIArea(t *testing.T) {
 		"/api/v1/dashboard/license-alerts",
 		"/api/v1/me/devices",
 		"/api/v1/me/licenses",
+		"/api/v1/me/licenses/{assignment_id}/key",
 	} {
 		if _, exists := document.Paths[path]; !exists {
 			t.Fatalf("openapi document is missing path %s", path)

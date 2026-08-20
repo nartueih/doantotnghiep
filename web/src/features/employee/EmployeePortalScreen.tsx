@@ -5,6 +5,7 @@ import type { DeviceItem } from '../../lib/device-api'
 import {
   getMyDevices,
   getMyLicenses,
+  revealMyLicenseKey,
   SelfServiceAPIError,
   type MyAssignedLicense,
 } from '../../lib/self-service-api'
@@ -18,6 +19,13 @@ interface EmployeePortalScreenProps {
 interface PortalError {
   message: string
   status: number
+}
+
+interface EmployeeKeyDialog {
+  license: MyAssignedLicense
+  loading: boolean
+  key?: string
+  error?: string
 }
 
 const deviceStatusLabels: Record<string, string> = {
@@ -44,6 +52,8 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<PortalError | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [keyDialog, setKeyDialog] = useState<EmployeeKeyDialog | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -85,6 +95,30 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
 
   const initials = userInitials(session.user.full_name)
 
+  async function confirmKeyReveal() {
+    if (!keyDialog) return
+    setCopied(false)
+    setKeyDialog({ license: keyDialog.license, loading: true })
+    try {
+      const key = await revealMyLicenseKey(session.tokens.access_token, keyDialog.license.assignment_id)
+      setKeyDialog({ license: keyDialog.license, key, loading: false })
+    } catch (caughtError) {
+      let message = caughtError instanceof Error ? caughtError.message : 'Không thể xem key kích hoạt.'
+      if (caughtError instanceof SelfServiceAPIError) {
+        if (caughtError.status === 403) message = 'Bộ phận IT chưa cho phép nhân viên xem key của license này.'
+        if (caughtError.status === 404) message = 'Cấp phát hoặc activation key không còn khả dụng.'
+        if (caughtError.status === 409) message = 'License này hiện không ở trạng thái có thể kích hoạt.'
+      }
+      setKeyDialog({ license: keyDialog.license, error: message, loading: false })
+    }
+  }
+
+  async function copyKey() {
+    if (!keyDialog?.key) return
+    await navigator.clipboard.writeText(keyDialog.key)
+    setCopied(true)
+  }
+
   return <div className="employee-portal">
     <header className="employee-header">
       <a className="employee-brand" href="#/portal" aria-label="Trang chủ License Manager"><span>LM</span><div><strong>License Manager</strong><small>Cổng thông tin nhân viên</small></div></a>
@@ -115,14 +149,19 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
 
           <section className="employee-panel employee-licenses-panel" id="my-licenses">
             <header><div><span><Icon name="key" /></span><div><h2>License của tôi</h2><p>Quyền sử dụng phần mềm đang có hiệu lực</p></div></div><div className="employee-license-tabs" role="group" aria-label="Lọc nguồn cấp license"><button className={sourceFilter === 'all' ? 'active' : ''} type="button" onClick={() => setSourceFilter('all')}>Tất cả <span>{licenses.length}</span></button><button className={sourceFilter === 'user' ? 'active' : ''} type="button" onClick={() => setSourceFilter('user')}>Trực tiếp <span>{stats.direct}</span></button><button className={sourceFilter === 'device' ? 'active' : ''} type="button" onClick={() => setSourceFilter('device')}>Theo thiết bị <span>{stats.viaDevice}</span></button></div></header>
-            {isLoading ? <PortalLoading count={3} /> : filteredLicenses.length ? <div className="employee-license-list">{filteredLicenses.map((license) => <LicenseCard license={license} key={license.assignment_id} />)}</div> : <PortalEmpty icon="key" title={licenses.length ? 'Không có license phù hợp' : 'Bạn chưa được cấp license'} detail={licenses.length ? 'Hãy chọn một nhóm license khác.' : 'License được cấp trực tiếp hoặc qua thiết bị sẽ xuất hiện tại đây.'} />}
+            {isLoading ? <PortalLoading count={3} /> : filteredLicenses.length ? <div className="employee-license-list">{filteredLicenses.map((license) => <LicenseCard license={license} onViewKey={(item) => { setCopied(false); setKeyDialog({ license: item, loading: false }) }} key={license.assignment_id} />)}</div> : <PortalEmpty icon="key" title={licenses.length ? 'Không có license phù hợp' : 'Bạn chưa được cấp license'} detail={licenses.length ? 'Hãy chọn một nhóm license khác.' : 'License được cấp trực tiếp hoặc qua thiết bị sẽ xuất hiện tại đây.'} />}
           </section>
         </div>
       </>}
 
-      <section className="employee-privacy"><Icon name="check" /><div><strong>Dữ liệu cá nhân được bảo vệ</strong><p>Portal chỉ hiển thị tài sản thuộc tài khoản đang đăng nhập. License key và dữ liệu của nhân viên khác không bao giờ được trả về.</p></div></section>
+      <section className="employee-privacy"><Icon name="check" /><div><strong>Dữ liệu cá nhân được bảo vệ</strong><p>Portal chỉ hiển thị tài sản thuộc tài khoản đang đăng nhập. Key chỉ được giải mã khi IT cho phép và mọi lần xem đều được ghi Audit Log.</p></div></section>
     </main>
     <footer className="employee-footer"><span>License Manager · Enterprise</span><span>Cần hỗ trợ? Liên hệ bộ phận IT nội bộ.</span></footer>
+    {keyDialog && <div className="employee-key-backdrop" role="presentation" onMouseDown={(event) => { if (!keyDialog.loading && event.target === event.currentTarget) setKeyDialog(null) }}><section className="employee-key-dialog" role="dialog" aria-modal="true" aria-labelledby="employee-key-title">
+      <button className="employee-key-close" type="button" onClick={() => setKeyDialog(null)} disabled={keyDialog.loading} aria-label="Đóng"><Icon name="close" /></button>
+      <span className="employee-key-icon"><Icon name="key" /></span><h2 id="employee-key-title">Key kích hoạt phần mềm</h2><p>{keyDialog.license.license_name}</p>
+      {keyDialog.loading ? <div className="employee-key-loading"><span />Đang xác minh quyền và giải mã...</div> : keyDialog.error ? <><div className="employee-key-error" role="alert"><Icon name="alert" />{keyDialog.error}</div><button className="employee-key-secondary" type="button" onClick={() => setKeyDialog(null)}>Đóng</button></> : keyDialog.key ? <><code>{keyDialog.key}</code><button className="employee-key-copy" type="button" onClick={copyKey}>{copied ? 'Đã sao chép' : 'Sao chép key'}</button><small>Không chia sẻ key ra ngoài công ty. Thao tác này đã được ghi vào Nhật ký hoạt động.</small></> : <><div className="employee-key-warning"><Icon name="alert" /><span><strong>Xác nhận xem activation key?</strong><small>Key là thông tin nội bộ. Chỉ sử dụng để kích hoạt phần mềm trên thiết bị được công ty cấp.</small></span></div><div className="employee-key-actions"><button className="employee-key-secondary" type="button" onClick={() => setKeyDialog(null)}>Hủy</button><button className="employee-key-confirm" type="button" onClick={confirmKeyReveal}>Xác nhận xem key</button></div></>}
+    </section></div>}
   </div>
 }
 
@@ -135,13 +174,13 @@ function DeviceCard({ device }: { device: DeviceItem }) {
   </article>
 }
 
-function LicenseCard({ license }: { license: MyAssignedLicense }) {
+function LicenseCard({ license, onViewKey }: { license: MyAssignedLicense; onViewKey: (license: MyAssignedLicense) => void }) {
   const days = daysUntil(license.expires_at)
   const attention = licenseNeedsAttention(license)
   return <article className="employee-license-card">
     <span className="employee-license-mark">{licenseInitials(license.license_name)}</span>
     <div className="employee-license-info"><div><strong>{license.license_name}</strong><span className={`employee-license-status ${attention ? 'attention' : ''}`}>{licenseStatusLabel(license, days)}</span></div><p>{license.notes || 'License phục vụ công việc của bạn.'}</p><div className="employee-license-meta"><span><Icon name="assignment" />{license.assignment_source === 'device' ? `Theo thiết bị ${license.device_asset_code || ''}` : 'Cấp trực tiếp cho bạn'}</span><span><Icon name="calendar" />{license.license_type === 'perpetual' && !license.expires_at ? 'Vĩnh viễn' : `Hết hạn ${formatDate(license.expires_at, 'chưa xác định')}`}</span></div></div>
-    <span className="employee-license-type">{license.license_type === 'perpetual' ? 'Vĩnh viễn' : 'Thuê bao'}</span>
+    <div className="employee-license-actions"><span className="employee-license-type">{license.license_type === 'perpetual' ? 'Vĩnh viễn' : 'Thuê bao'}</span>{license.can_view_key && <button type="button" onClick={() => onViewKey(license)}><Icon name="key" />Xem key</button>}</div>
   </article>
 }
 
