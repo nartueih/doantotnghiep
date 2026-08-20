@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { AdminShell, Icon, type AdminPage } from '../../components/layout/AdminShell'
 import type { AuthSession, AuthUser, UserRole } from '../../lib/auth-api'
+import { DepartmentAPIError, getDepartments, type DepartmentItem } from '../../lib/department-api'
 import {
   createUser,
-  getDepartments,
   getUsers,
   updateUserStatus,
   UserAPIError,
   type CreateUserInput,
-  type DepartmentItem,
   type UserStatus,
 } from '../../lib/user-api'
 import './UserManagementScreen.css'
@@ -58,9 +57,13 @@ export function UserManagementScreen({ session, onNavigate, onLogout }: UserMana
       })
       .catch((caughtError: unknown) => {
         if (cancelled) return
-        setError(caughtError instanceof UserAPIError
-          ? caughtError
-          : new UserAPIError('Đã xảy ra lỗi không mong muốn.', 0))
+        if (caughtError instanceof UserAPIError) {
+          setError(caughtError)
+        } else if (caughtError instanceof DepartmentAPIError) {
+          setError(new UserAPIError(caughtError.message, caughtError.status))
+        } else {
+          setError(new UserAPIError('Đã xảy ra lỗi không mong muốn.', 0))
+        }
       })
       .finally(() => { if (!cancelled) setIsLoading(false) })
 

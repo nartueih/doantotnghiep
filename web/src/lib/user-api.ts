@@ -2,14 +2,6 @@ import type { AuthUser, UserRole } from './auth-api'
 
 export type UserStatus = 'active' | 'locked'
 
-export interface DepartmentItem {
-  id: string
-  name: string
-  code: string
-  created_at: string
-  updated_at: string
-}
-
 export interface CreateUserInput {
   email: string
   password: string
@@ -71,10 +63,6 @@ async function request<T>(path: string, accessToken: string, init?: RequestInit)
 
 export function getUsers(accessToken: string): Promise<ListResult<AuthUser>> {
   return request('/users', accessToken)
-}
-
-export function getDepartments(accessToken: string): Promise<ListResult<DepartmentItem>> {
-  return request('/departments', accessToken)
 }
 
 export function createUser(accessToken: string, input: CreateUserInput): Promise<AuthUser> {

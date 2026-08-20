@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthSession, UserRole } from '../../lib/auth-api'
 import './AdminShell.css'
 
-export type AdminPage = 'dashboard' | 'licenses' | 'assignments' | 'devices' | 'users'
+export type AdminPage = 'dashboard' | 'licenses' | 'assignments' | 'devices' | 'users' | 'departments'
 export type IconName = 'grid' | 'software' | 'key' | 'assignment' | 'device' | 'users' |
   'department' | 'audit' | 'bell' | 'refresh' | 'search' | 'chevron' | 'trend' |
   'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'archive' | 'undo' | 'settings' | 'close'
@@ -30,7 +30,7 @@ const navigation: Array<{ label: string; icon: IconName; page?: AdminPage }> = [
   { label: 'Cấp phát', icon: 'assignment', page: 'assignments' },
   { label: 'Thiết bị', icon: 'device', page: 'devices' },
   { label: 'Người dùng', icon: 'users', page: 'users' },
-  { label: 'Phòng ban', icon: 'department' },
+  { label: 'Phòng ban', icon: 'department', page: 'departments' },
   { label: 'Nhật ký', icon: 'audit' },
 ]
 

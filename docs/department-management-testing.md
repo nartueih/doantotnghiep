@@ -2,6 +2,8 @@
 
 Module phòng ban hỗ trợ Admin quản lý danh mục phòng ban và gán phòng ban khi tạo người dùng. IT Manager chỉ được xem danh sách; Employee không được truy cập.
 
+Sau khi kiểm tra API, có thể tiếp tục với [kịch bản kiểm thử giao diện quản lý phòng ban](web-department-management-testing.md).
+
 ## API
 
 | Method | Endpoint | Quyền | Chức năng |
