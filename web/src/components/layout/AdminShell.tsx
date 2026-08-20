@@ -2,10 +2,10 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthSession, UserRole } from '../../lib/auth-api'
 import './AdminShell.css'
 
-export type AdminPage = 'dashboard' | 'licenses' | 'assignments'
+export type AdminPage = 'dashboard' | 'licenses' | 'assignments' | 'devices'
 export type IconName = 'grid' | 'software' | 'key' | 'assignment' | 'device' | 'users' |
   'department' | 'audit' | 'bell' | 'refresh' | 'search' | 'chevron' | 'trend' |
-  'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'archive' | 'undo' | 'close'
+  'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'archive' | 'undo' | 'settings' | 'close'
 
 interface AdminShellProps {
   session: AuthSession
@@ -28,7 +28,7 @@ const navigation: Array<{ label: string; icon: IconName; page?: AdminPage }> = [
   { label: 'Phần mềm', icon: 'software' },
   { label: 'License', icon: 'key', page: 'licenses' },
   { label: 'Cấp phát', icon: 'assignment', page: 'assignments' },
-  { label: 'Thiết bị', icon: 'device' },
+  { label: 'Thiết bị', icon: 'device', page: 'devices' },
   { label: 'Người dùng', icon: 'users' },
   { label: 'Phòng ban', icon: 'department' },
   { label: 'Nhật ký', icon: 'audit' },
@@ -142,6 +142,7 @@ export function Icon({ name }: { name: IconName }) {
     edit: <><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4z" /></>,
     archive: <><path d="M4 8v12h16V8M3 4h18v4H3zM9 12h6" /></>,
     undo: <><path d="M9 7l-5 5 5 5" /><path d="M4 12h10a6 6 0 016 6v1" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.6V21h-4v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 00.3-1.9A1.7 1.7 0 003 14H3v-4h.1a1.7 1.7 0 001.6-1 1.7 1.7 0 00-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.6V3h4v.1a1.7 1.7 0 001 1.6 1.7 1.7 0 001.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 00-.3 1.9 1.7 1.7 0 001.6 1h.1v4H21a1.7 1.7 0 00-1.6 1z" /></>,
     close: <path d="M6 6l12 12M18 6L6 18" />,
   }
   return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>

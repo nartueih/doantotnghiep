@@ -1,5 +1,7 @@
 # Kiểm tra module quản lý thiết bị
 
+Sau khi kiểm tra API, có thể tiếp tục với [kịch bản kiểm thử giao diện quản lý thiết bị](web-device-management-testing.md).
+
 Admin và IT Manager được quản lý thiết bị. Employee không được truy cập các API quản trị thiết bị.
 
 ## API
