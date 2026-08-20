@@ -35,6 +35,8 @@ Quy trình tạo, bàn giao và thu hồi thiết bị nằm trong [hướng d�
 
 Luồng sử dụng seat, cấp phát và thu hồi license nằm trong [hướng dẫn license assignment](docs/license-assignment-testing.md).
 
+Giao diện quản trị cấp phát được kiểm tra theo [hướng dẫn Web Assignment Management](docs/web-assignment-management-testing.md).
+
 Danh mục phòng ban và liên kết người dùng nằm trong [hướng dẫn department management](docs/department-management-testing.md).
 
 Nhật ký thao tác và quy tắc bảo vệ dữ liệu nhạy cảm nằm trong [hướng dẫn Audit Log](docs/audit-log-testing.md).

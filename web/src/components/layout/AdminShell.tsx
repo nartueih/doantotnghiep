@@ -2,10 +2,10 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthSession, UserRole } from '../../lib/auth-api'
 import './AdminShell.css'
 
-export type AdminPage = 'dashboard' | 'licenses'
+export type AdminPage = 'dashboard' | 'licenses' | 'assignments'
 export type IconName = 'grid' | 'software' | 'key' | 'assignment' | 'device' | 'users' |
   'department' | 'audit' | 'bell' | 'refresh' | 'search' | 'chevron' | 'trend' |
-  'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'archive' | 'close'
+  'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'archive' | 'undo' | 'close'
 
 interface AdminShellProps {
   session: AuthSession
@@ -27,7 +27,7 @@ const navigation: Array<{ label: string; icon: IconName; page?: AdminPage }> = [
   { label: 'Tổng quan', icon: 'grid', page: 'dashboard' },
   { label: 'Phần mềm', icon: 'software' },
   { label: 'License', icon: 'key', page: 'licenses' },
-  { label: 'Cấp phát', icon: 'assignment' },
+  { label: 'Cấp phát', icon: 'assignment', page: 'assignments' },
   { label: 'Thiết bị', icon: 'device' },
   { label: 'Người dùng', icon: 'users' },
   { label: 'Phòng ban', icon: 'department' },
@@ -141,6 +141,7 @@ export function Icon({ name }: { name: IconName }) {
     eye: <><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>,
     edit: <><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4z" /></>,
     archive: <><path d="M4 8v12h16V8M3 4h18v4H3zM9 12h6" /></>,
+    undo: <><path d="M9 7l-5 5 5 5" /><path d="M4 12h10a6 6 0 016 6v1" /></>,
     close: <path d="M6 6l12 12M18 6L6 18" />,
   }
   return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>

@@ -2,6 +2,8 @@
 
 Admin và IT Manager có thể cấp phát/thu hồi. Employee không được truy cập API quản trị.
 
+Admin và IT Manager đều có quyền đọc danh sách người dùng để chọn đối tượng cấp phát. Chỉ Admin được tạo hoặc khóa/mở khóa tài khoản.
+
 ## API
 
 | Method | Endpoint | Chức năng |

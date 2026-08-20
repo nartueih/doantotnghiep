@@ -114,8 +114,8 @@
         "tags": ["Users"],
         "operationId": "listUsers",
         "summary": "Danh sách người dùng",
-        "description": "Chỉ Admin.",
-        "x-required-roles": ["admin"],
+        "description": "Admin và IT Manager có thể xem để phục vụ quản trị và cấp phát license.",
+        "x-required-roles": ["admin", "it_manager"],
         "responses": {
           "200": { "description": "Danh sách người dùng", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserList" } } } },
           "401": { "$ref": "#/components/responses/Unauthorized" },
