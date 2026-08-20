@@ -3,6 +3,7 @@ import './App.css'
 import type { AdminPage } from './components/layout/AdminShell'
 import { AssignmentManagementScreen } from './features/assignments/AssignmentManagementScreen'
 import { DashboardScreen } from './features/dashboard/DashboardScreen'
+import { DepartmentManagementScreen } from './features/departments/DepartmentManagementScreen'
 import { DeviceManagementScreen } from './features/devices/DeviceManagementScreen'
 import { LicenseManagementScreen } from './features/licenses/LicenseManagementScreen'
 import { UserManagementScreen } from './features/users/UserManagementScreen'
@@ -20,6 +21,7 @@ function pageFromHash(): AdminPage {
   if (window.location.hash === '#/assignments') return 'assignments'
   if (window.location.hash === '#/devices') return 'devices'
   if (window.location.hash === '#/users') return 'users'
+  if (window.location.hash === '#/departments') return 'departments'
   return 'dashboard'
 }
 
@@ -75,6 +77,9 @@ function App() {
     }
     if (adminPage === 'users') {
       return <UserManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
+    }
+    if (adminPage === 'departments') {
+      return <DepartmentManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
     }
     return <DashboardScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
   }

@@ -43,6 +43,8 @@ Giao diện quản trị cấp phát được kiểm tra theo [hướng dẫn We
 
 Danh mục phòng ban và liên kết người dùng nằm trong [hướng dẫn department management](docs/department-management-testing.md).
 
+Giao diện quản trị phòng ban được kiểm tra theo [hướng dẫn Web Department Management](docs/web-department-management-testing.md).
+
 Nhật ký thao tác và quy tắc bảo vệ dữ liệu nhạy cảm nằm trong [hướng dẫn Audit Log](docs/audit-log-testing.md).
 
 Số liệu tổng quan, chi phí và cảnh báo license nằm trong [hướng dẫn Dashboard & Alerts](docs/dashboard-alerts-testing.md).

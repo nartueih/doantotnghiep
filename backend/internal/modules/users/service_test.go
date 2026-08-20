@@ -126,6 +126,46 @@ func TestCreateUserRejectsMissingDepartment(t *testing.T) {
 	}
 }
 
+func TestListUsersRefreshesDepartmentName(t *testing.T) {
+	_, repository, hasher := newUsersTestService(t)
+	departmentRepository := departments.NewMemoryRepository()
+	department := departments.Department{
+		ID:   "00000000-0000-0000-0000-000000000010",
+		Name: "New Department Name",
+		Code: "NEW",
+	}
+	if _, err := departmentRepository.Create(context.Background(), department); err != nil {
+		t.Fatalf("create department: %v", err)
+	}
+	if _, err := repository.CreateUser(context.Background(), auth.User{
+		ID:             "00000000-0000-0000-0000-000000000002",
+		Email:          "employee@example.com",
+		FullName:       "Employee User",
+		EmployeeCode:   "EMP-002",
+		DepartmentID:   department.ID,
+		DepartmentName: "Old Department Name",
+		Role:           auth.RoleEmployee,
+		Status:         auth.StatusActive,
+	}); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	service := NewService(repository, hasher, departmentRepository)
+	items, err := service.List(context.Background())
+	if err != nil {
+		t.Fatalf("list users: %v", err)
+	}
+	for _, item := range items {
+		if item.ID == "00000000-0000-0000-0000-000000000002" {
+			if item.DepartmentName != department.Name {
+				t.Fatalf("expected refreshed department name, got %#v", item)
+			}
+			return
+		}
+	}
+	t.Fatalf("created user was not returned: %#v", items)
+}
+
 func newUsersTestService(t *testing.T) (*Service, *auth.MemoryRepository, auth.PasswordHasher) {
 	t.Helper()
 	hasher := auth.NewPasswordHasher(4)

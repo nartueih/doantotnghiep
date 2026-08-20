@@ -56,7 +56,25 @@ func NewService(repository Repository, hasher auth.PasswordHasher, departmentFin
 }
 
 func (s *Service) List(ctx context.Context) ([]auth.User, error) {
-	return s.repository.ListUsers(ctx)
+	items, err := s.repository.ListUsers(ctx)
+	if err != nil || s.departmentFinder == nil {
+		return items, err
+	}
+	for index := range items {
+		if items[index].DepartmentID == "" {
+			continue
+		}
+		department, findErr := s.departmentFinder.FindByID(ctx, items[index].DepartmentID)
+		if errors.Is(findErr, departments.ErrNotFound) {
+			items[index].DepartmentName = ""
+			continue
+		}
+		if findErr != nil {
+			return nil, fmt.Errorf("find department for user: %w", findErr)
+		}
+		items[index].DepartmentName = department.Name
+	}
+	return items, nil
 }
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (auth.User, error) {
