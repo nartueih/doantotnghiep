@@ -15,6 +15,7 @@ export interface MyAssignedLicense {
   expires_at?: string
   lifecycle_status: 'active' | 'upcoming' | 'expired' | string
   notes?: string
+  can_view_key: boolean
 }
 
 interface ListResult<T> {
@@ -68,4 +69,9 @@ export function getMyDevices(accessToken: string): Promise<ListResult<DeviceItem
 
 export function getMyLicenses(accessToken: string): Promise<ListResult<MyAssignedLicense>> {
   return request('/me/licenses', accessToken)
+}
+
+export async function revealMyLicenseKey(accessToken: string, assignmentID: string): Promise<string> {
+  const result = await request<{ license_key: string }>(`/me/licenses/${assignmentID}/key`, accessToken)
+  return result.license_key
 }

@@ -15,6 +15,7 @@ export interface LicenseItem {
   used_seats: number
   available_seats: number
   key_hint?: string
+  allow_employee_key_view: boolean
   vendor: string
   purchased_at?: string
   starts_at?: string
@@ -35,6 +36,7 @@ export interface LicenseInput {
   assignment_type: AssignmentType
   seat_count: number
   license_key: string
+  allow_employee_key_view: boolean
   vendor: string
   purchased_at: string
   starts_at: string

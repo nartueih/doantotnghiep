@@ -183,7 +183,7 @@ Sau khi hoàn thành và hiểu toàn bộ luồng trên, bước tiếp theo m�
 
 1. Cài PostgreSQL trực tiếp hoặc sửa Docker Desktop.
 2. Tạo database `license_manager` và user `license_admin`.
-3. Chạy lần lượt `001_initial_schema.sql`, sau đó `002_license_archiving.sql`.
+3. Chạy lần lượt `001_initial_schema.sql`, `002_license_archiving.sql`, sau đó `003_employee_license_key_access.sql`.
 4. Chuyển `STORAGE_DRIVER` từ `memory` sang `postgres`.
 5. Tạo tài khoản Admin thật trong bảng `users`.
 

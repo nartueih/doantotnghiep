@@ -17,6 +17,7 @@ function initialInput(license?: LicenseItem): LicenseInput {
     assignment_type: license?.assignment_type ?? 'user',
     seat_count: license?.seat_count ?? 1,
     license_key: '',
+    allow_employee_key_view: license?.allow_employee_key_view ?? false,
     vendor: license?.vendor ?? '',
     purchased_at: license?.purchased_at ?? '',
     starts_at: license?.starts_at ?? '',
@@ -109,6 +110,10 @@ export function LicenseFormDialog({ license, products, onClose, onSubmit }: Lice
               <label className="full">Activation key
                 <div className="license-key-input"><input type={showKey ? 'text' : 'password'} value={input.license_key} onChange={(event) => update('license_key', event.target.value)} placeholder={editing ? 'Để trống để giữ key hiện tại' : 'Nhập activation key nếu có'} autoComplete="off" disabled={isSubmitting} /><button type="button" onClick={() => setShowKey((visible) => !visible)}>{showKey ? 'Ẩn' : 'Hiện'}</button></div>
                 <small>{editing && license?.key_hint ? `Key hiện tại: ${license.key_hint}` : 'Key sẽ không xuất hiện trong API danh sách.'}</small>
+              </label>
+              <label className="license-employee-key-access full">
+                <input type="checkbox" checked={input.allow_employee_key_view} onChange={(event) => update('allow_employee_key_view', event.target.checked)} disabled={isSubmitting} />
+                <span><strong>Cho phép nhân viên tự xem key kích hoạt</strong><small>Chỉ nhân viên đang có cấp phát hợp lệ mới xem được. Mỗi lần xem đều được ghi vào Audit Log.</small></span>
               </label>
               <label className="full">Ghi chú<textarea rows={3} value={input.notes} onChange={(event) => update('notes', event.target.value)} placeholder="Thông tin gia hạn, hợp đồng hoặc phạm vi sử dụng..." disabled={isSubmitting} /></label>
             </div>

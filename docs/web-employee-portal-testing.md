@@ -91,10 +91,10 @@ Khi license đã hết hạn hoặc còn tối đa 30 ngày:
 
 Xác nhận giao diện không hiển thị:
 
-- Plaintext license key hoặc key hint.
+- Key của license chưa được IT cho phép chia sẻ hoặc không thuộc Employee hiện tại.
 - License được cấp cho nhân viên khác.
 - Thiết bị được giao cho nhân viên khác.
-- Chức năng sửa, cấp phát, thu hồi hoặc xem khóa.
+- Chức năng sửa, cấp phát hoặc thu hồi. Nút xem key chỉ xuất hiện khi backend trả `can_view_key=true`.
 
 Thử sửa URL thành `#/users`, `#/licenses` hoặc `#/audit`. Employee vẫn phải ở portal và không được thấy màn hình quản trị.
 

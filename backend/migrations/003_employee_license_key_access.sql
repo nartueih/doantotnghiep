@@ -1,0 +1,2 @@
+ALTER TABLE licenses
+    ADD COLUMN IF NOT EXISTS allow_employee_key_view BOOLEAN NOT NULL DEFAULT FALSE;

@@ -262,7 +262,7 @@ function LicenseRow({ license, product, onShowKey, onEdit, onArchive }: { licens
     <tr className={license.lifecycle_status === 'archived' ? 'archived' : undefined}>
       <td><div className="license-identity"><span>{license.name.slice(0, 2).toUpperCase()}</span><div><strong>{license.name}</strong><small>{product ? `${product.publisher} · ${product.name}` : 'Chưa xác định phần mềm'}</small></div></div></td>
       <td><span className="license-type">{license.license_type === 'subscription' ? 'Thuê bao' : 'Vĩnh viễn'}</span><small className="assignment-type">{assignmentLabel(license.assignment_type)}</small></td>
-      <td><strong className="vendor-name">{license.vendor || '—'}</strong><small className="key-hint">{license.key_hint || 'Chưa có key'}</small></td>
+      <td><strong className="vendor-name">{license.vendor || '—'}</strong><small className="key-hint">{license.key_hint || 'Chưa có key'}</small><small className={license.allow_employee_key_view ? 'employee-key-policy allowed' : 'employee-key-policy'}>{license.allow_employee_key_view ? 'Nhân viên được xem key' : 'Chỉ IT được xem key'}</small></td>
       <td><div className="seat-value"><strong>{license.used_seats}</strong><span>/ {license.seat_count}</span><small>{Math.round(percent)}%</small></div><span className="license-seat-track"><i className={percent >= 100 ? 'full' : percent >= 80 ? 'high' : ''} style={{ width: `${Math.min(percent, 100)}%` }} /></span></td>
       <td><strong className="expiry-date">{license.expires_at ? formatDate(license.expires_at) : 'Không thời hạn'}</strong><small className="expiry-detail">{expiryDetail(license)}</small></td>
       <td><span className={`license-status ${status.tone}`}><i />{status.label}</span></td>

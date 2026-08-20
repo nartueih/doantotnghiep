@@ -69,7 +69,8 @@ func (h *HTTPHandler) create(c *gin.Context) {
 	}
 	if err := audit.RecordRequest(c, h.audit, audit.ActionCreate, audit.EntityLicense, item.ID, map[string]any{
 		"name": item.Name, "software_product_id": item.SoftwareProductID, "seat_count": item.SeatCount,
-		"key_configured": item.KeyHint != "",
+		"key_configured":      item.KeyHint != "",
+		"employee_key_access": item.AllowEmployeeKeyView,
 	}); err != nil {
 		audit.WriteError(c)
 		return
@@ -89,7 +90,8 @@ func (h *HTTPHandler) update(c *gin.Context) {
 	}
 	if err := audit.RecordRequest(c, h.audit, audit.ActionUpdate, audit.EntityLicense, item.ID, map[string]any{
 		"name": item.Name, "software_product_id": item.SoftwareProductID, "seat_count": item.SeatCount,
-		"key_changed": input.LicenseKey != "",
+		"key_changed":         input.LicenseKey != "",
+		"employee_key_access": item.AllowEmployeeKeyView,
 	}); err != nil {
 		audit.WriteError(c)
 		return
@@ -112,38 +114,40 @@ func (h *HTTPHandler) revealKey(c *gin.Context) {
 
 func bindLicenseInput(c *gin.Context) (Input, bool) {
 	var request struct {
-		SoftwareProductID string  `json:"software_product_id" binding:"required"`
-		Name              string  `json:"name" binding:"required"`
-		LicenseType       string  `json:"license_type" binding:"required"`
-		AssignmentType    string  `json:"assignment_type" binding:"required"`
-		SeatCount         int     `json:"seat_count" binding:"required"`
-		LicenseKey        string  `json:"license_key"`
-		Vendor            string  `json:"vendor"`
-		PurchasedAt       string  `json:"purchased_at"`
-		StartsAt          string  `json:"starts_at"`
-		ExpiresAt         string  `json:"expires_at"`
-		Cost              float64 `json:"cost"`
-		Currency          string  `json:"currency"`
-		Notes             string  `json:"notes"`
+		SoftwareProductID    string  `json:"software_product_id" binding:"required"`
+		Name                 string  `json:"name" binding:"required"`
+		LicenseType          string  `json:"license_type" binding:"required"`
+		AssignmentType       string  `json:"assignment_type" binding:"required"`
+		SeatCount            int     `json:"seat_count" binding:"required"`
+		LicenseKey           string  `json:"license_key"`
+		AllowEmployeeKeyView bool    `json:"allow_employee_key_view"`
+		Vendor               string  `json:"vendor"`
+		PurchasedAt          string  `json:"purchased_at"`
+		StartsAt             string  `json:"starts_at"`
+		ExpiresAt            string  `json:"expires_at"`
+		Cost                 float64 `json:"cost"`
+		Currency             string  `json:"currency"`
+		Notes                string  `json:"notes"`
 	}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "required license fields are missing"})
 		return Input{}, false
 	}
 	return Input{
-		SoftwareProductID: request.SoftwareProductID,
-		Name:              request.Name,
-		LicenseType:       request.LicenseType,
-		AssignmentType:    request.AssignmentType,
-		SeatCount:         request.SeatCount,
-		LicenseKey:        request.LicenseKey,
-		Vendor:            request.Vendor,
-		PurchasedAt:       request.PurchasedAt,
-		StartsAt:          request.StartsAt,
-		ExpiresAt:         request.ExpiresAt,
-		Cost:              request.Cost,
-		Currency:          request.Currency,
-		Notes:             request.Notes,
+		SoftwareProductID:    request.SoftwareProductID,
+		Name:                 request.Name,
+		LicenseType:          request.LicenseType,
+		AssignmentType:       request.AssignmentType,
+		SeatCount:            request.SeatCount,
+		LicenseKey:           request.LicenseKey,
+		AllowEmployeeKeyView: request.AllowEmployeeKeyView,
+		Vendor:               request.Vendor,
+		PurchasedAt:          request.PurchasedAt,
+		StartsAt:             request.StartsAt,
+		ExpiresAt:            request.ExpiresAt,
+		Cost:                 request.Cost,
+		Currency:             request.Currency,
+		Notes:                request.Notes,
 	}, true
 }
 
