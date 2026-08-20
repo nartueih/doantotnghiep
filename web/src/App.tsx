@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import './App.css'
 import type { AdminPage } from './components/layout/AdminShell'
+import { AssignmentManagementScreen } from './features/assignments/AssignmentManagementScreen'
 import { DashboardScreen } from './features/dashboard/DashboardScreen'
 import { LicenseManagementScreen } from './features/licenses/LicenseManagementScreen'
 import {
@@ -13,7 +14,9 @@ import {
 const SESSION_KEY = 'enterprise-license-manager.session'
 
 function pageFromHash(): AdminPage {
-  return window.location.hash === '#/licenses' ? 'licenses' : 'dashboard'
+  if (window.location.hash === '#/licenses') return 'licenses'
+  if (window.location.hash === '#/assignments') return 'assignments'
+  return 'dashboard'
 }
 
 function readSession(): AuthSession | null {
@@ -39,7 +42,7 @@ function App() {
   }, [])
 
   function handleNavigate(page: AdminPage) {
-    window.location.hash = page === 'licenses' ? '/licenses' : '/dashboard'
+    window.location.hash = `/${page}`
     setAdminPage(page)
   }
 
@@ -59,6 +62,9 @@ function App() {
   if (session) {
     if (adminPage === 'licenses') {
       return <LicenseManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
+    }
+    if (adminPage === 'assignments') {
+      return <AssignmentManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
     }
     return <DashboardScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
   }

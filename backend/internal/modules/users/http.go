@@ -25,10 +25,10 @@ func NewHTTPHandler(service *Service, authHandler *auth.HTTPHandler, recorders .
 
 func (h *HTTPHandler) RegisterRoutes(v1 *gin.RouterGroup) {
 	routes := v1.Group("/users")
-	routes.Use(h.auth.Authenticate(), h.auth.RequireRoles(auth.RoleAdmin))
-	routes.GET("", h.list)
-	routes.POST("", h.create)
-	routes.PATCH("/:id/status", h.updateStatus)
+	routes.Use(h.auth.Authenticate())
+	routes.GET("", h.auth.RequireRoles(auth.RoleAdmin, auth.RoleITManager), h.list)
+	routes.POST("", h.auth.RequireRoles(auth.RoleAdmin), h.create)
+	routes.PATCH("/:id/status", h.auth.RequireRoles(auth.RoleAdmin), h.updateStatus)
 }
 
 func (h *HTTPHandler) list(c *gin.Context) {

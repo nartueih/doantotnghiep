@@ -6,7 +6,7 @@ Các bước này dùng `STORAGE_DRIVER=memory`, không yêu cầu Docker hoặc
 
 | Method | Endpoint | Quyền | Chức năng |
 | --- | --- | --- | --- |
-| GET | `/api/v1/users` | Admin | Xem danh sách người dùng |
+| GET | `/api/v1/users` | Admin, IT Manager | Xem danh sách người dùng |
 | POST | `/api/v1/users` | Admin | Tạo người dùng |
 | PATCH | `/api/v1/users/:id/status` | Admin | Khóa hoặc mở khóa người dùng |
 
