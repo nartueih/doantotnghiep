@@ -6,6 +6,7 @@ import { AuditLogScreen } from './features/audit/AuditLogScreen'
 import { DashboardScreen } from './features/dashboard/DashboardScreen'
 import { DepartmentManagementScreen } from './features/departments/DepartmentManagementScreen'
 import { DeviceManagementScreen } from './features/devices/DeviceManagementScreen'
+import { EmployeePortalScreen } from './features/employee/EmployeePortalScreen'
 import { LicenseManagementScreen } from './features/licenses/LicenseManagementScreen'
 import { SoftwareManagementScreen } from './features/software/SoftwareManagementScreen'
 import { UserManagementScreen } from './features/users/UserManagementScreen'
@@ -58,6 +59,13 @@ function App() {
 
   function handleAuthenticated(nextSession: AuthSession) {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(nextSession))
+    if (nextSession.user.role === 'employee') {
+      window.location.hash = '/portal'
+      setAdminPage('dashboard')
+    } else if (window.location.hash === '#/portal') {
+      window.location.hash = '/dashboard'
+      setAdminPage('dashboard')
+    }
     setSession(nextSession)
   }
 
@@ -70,6 +78,9 @@ function App() {
   }
 
   if (session) {
+    if (session.user.role === 'employee') {
+      return <EmployeePortalScreen session={session} onLogout={handleLogout} />
+    }
     if (adminPage === 'software') {
       return <SoftwareManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
     }
