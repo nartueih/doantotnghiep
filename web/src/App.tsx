@@ -5,6 +5,7 @@ import { AssignmentManagementScreen } from './features/assignments/AssignmentMan
 import { DashboardScreen } from './features/dashboard/DashboardScreen'
 import { DeviceManagementScreen } from './features/devices/DeviceManagementScreen'
 import { LicenseManagementScreen } from './features/licenses/LicenseManagementScreen'
+import { UserManagementScreen } from './features/users/UserManagementScreen'
 import {
   APIError,
   type AuthSession,
@@ -18,6 +19,7 @@ function pageFromHash(): AdminPage {
   if (window.location.hash === '#/licenses') return 'licenses'
   if (window.location.hash === '#/assignments') return 'assignments'
   if (window.location.hash === '#/devices') return 'devices'
+  if (window.location.hash === '#/users') return 'users'
   return 'dashboard'
 }
 
@@ -70,6 +72,9 @@ function App() {
     }
     if (adminPage === 'devices') {
       return <DeviceManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
+    }
+    if (adminPage === 'users') {
+      return <UserManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
     }
     return <DashboardScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
   }

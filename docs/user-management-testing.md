@@ -2,6 +2,8 @@
 
 Các bước này dùng `STORAGE_DRIVER=memory`, không yêu cầu Docker hoặc database. Phải khởi động lại backend sau khi cập nhật source code.
 
+Sau khi kiểm tra API, có thể tiếp tục với [kịch bản kiểm thử giao diện quản lý người dùng](web-user-management-testing.md).
+
 ## API đã triển khai
 
 | Method | Endpoint | Quyền | Chức năng |

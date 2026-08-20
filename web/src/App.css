@@ -34,13 +34,13 @@
 
 .brand-lockup strong {
   color: inherit;
-  font-size: 16px;
+  font-size: 18px;
   letter-spacing: -0.01em;
 }
 
 .brand-lockup span:not(.brand-mark) {
   color: #8ea6c7;
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
@@ -55,7 +55,7 @@
   color: #fff;
   background: #176bdb;
   box-shadow: 0 12px 28px rgba(0, 50, 120, 0.28);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: -0.04em;
 }
@@ -71,7 +71,7 @@
   display: inline-block;
   margin-bottom: 17px;
   color: #7eb5ff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 750;
   letter-spacing: 0.17em;
   text-transform: uppercase;
@@ -112,12 +112,12 @@
   align-items: center;
   gap: 9px;
   color: #cfdaea;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .feature-list i {
   color: #4b94f4;
-  font-size: 9px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 800;
 }
@@ -156,7 +156,7 @@
   gap: 7px;
   margin-bottom: 21px;
   color: #4f6077;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 650;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -180,7 +180,7 @@
 
 .login-heading p {
   color: #758196;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 form > label,
@@ -188,7 +188,7 @@ form > label,
   display: block;
   margin-bottom: 9px;
   color: #243650;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -229,7 +229,7 @@ form > label,
   color: #172a45;
   background: #fff;
   font: inherit;
-  font-size: 14px;
+  font-size: 16px;
   transition: border-color 160ms, box-shadow 160ms;
 }
 
@@ -243,7 +243,7 @@ form > label,
   color: #176bdb;
   background: transparent;
   font: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -264,7 +264,7 @@ form > label,
   border-radius: 8px;
   color: #ad2931;
   background: #fff4f4;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.45;
 }
 
@@ -282,7 +282,7 @@ form > label,
   background: #176bdb;
   box-shadow: 0 13px 24px rgba(23, 107, 219, 0.2);
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 750;
   cursor: pointer;
   transition: transform 160ms, background 160ms, box-shadow 160ms;
@@ -315,7 +315,7 @@ form > label,
   gap: 7px;
   margin-top: 24px;
   color: #8b96a7;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .security-note svg {
@@ -349,7 +349,7 @@ form > label,
   color: #30445f;
   background: #fff;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -382,7 +382,7 @@ form > label,
   border-radius: 17px;
   color: #fff;
   background: linear-gradient(145deg, #176bdb, #0a4fa9);
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 800;
 }
 
@@ -394,7 +394,7 @@ form > label,
   letter-spacing: -0.045em;
 }
 
-.welcome-card > p { color: #6c7a8e; font-size: 14px; line-height: 1.7; }
+.welcome-card > p { color: #6c7a8e; font-size: 16px; line-height: 1.7; }
 
 .account-summary {
   margin: 34px 0 0;
@@ -407,8 +407,8 @@ form > label,
 
 .account-summary div { min-width: 0; padding: 17px; border-right: 1px solid #e5eaf0; }
 .account-summary div:last-child { border-right: 0; }
-.account-summary dt { margin-bottom: 6px; color: #8a96a7; font-size: 10px; text-transform: uppercase; }
-.account-summary dd { margin: 0; overflow: hidden; color: #263a56; font-size: 12px; font-weight: 700; text-overflow: ellipsis; }
+.account-summary dt { margin-bottom: 6px; color: #8a96a7; font-size: 12px; text-transform: uppercase; }
+.account-summary dd { margin: 0; overflow: hidden; color: #263a56; font-size: 14px; font-weight: 700; text-overflow: ellipsis; }
 
 @media (max-width: 900px) {
   .auth-page { grid-template-columns: 1fr; }
