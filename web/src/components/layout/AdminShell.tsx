@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthSession, UserRole } from '../../lib/auth-api'
 import './AdminShell.css'
 
-export type AdminPage = 'dashboard' | 'licenses' | 'assignments' | 'devices' | 'users' | 'departments'
+export type AdminPage = 'dashboard' | 'software' | 'licenses' | 'assignments' | 'devices' | 'users' | 'departments'
 export type IconName = 'grid' | 'software' | 'key' | 'assignment' | 'device' | 'users' |
   'department' | 'audit' | 'bell' | 'refresh' | 'search' | 'chevron' | 'trend' |
   'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'archive' | 'undo' | 'settings' | 'close'
@@ -25,7 +25,7 @@ const roleLabels: Record<UserRole, string> = {
 
 const navigation: Array<{ label: string; icon: IconName; page?: AdminPage }> = [
   { label: 'Tổng quan', icon: 'grid', page: 'dashboard' },
-  { label: 'Phần mềm', icon: 'software' },
+  { label: 'Phần mềm', icon: 'software', page: 'software' },
   { label: 'License', icon: 'key', page: 'licenses' },
   { label: 'Cấp phát', icon: 'assignment', page: 'assignments' },
   { label: 'Thiết bị', icon: 'device', page: 'devices' },
