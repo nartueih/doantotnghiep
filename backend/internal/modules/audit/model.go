@@ -13,13 +13,18 @@ const (
 	ActionRevoke       = "revoke"
 	ActionViewKey      = "view_key"
 	ActionArchive      = "archive"
+	ActionRequest      = "request"
+	ActionCancel       = "cancel"
+	ActionApprove      = "approve"
+	ActionReject       = "reject"
 
-	EntityUser       = "user"
-	EntityDepartment = "department"
-	EntitySoftware   = "software_product"
-	EntityLicense    = "license"
-	EntityDevice     = "device"
-	EntityAssignment = "license_assignment"
+	EntityUser           = "user"
+	EntityDepartment     = "department"
+	EntitySoftware       = "software_product"
+	EntityLicense        = "license"
+	EntityDevice         = "device"
+	EntityAssignment     = "license_assignment"
+	EntityLicenseRequest = "license_request"
 )
 
 type Log struct {

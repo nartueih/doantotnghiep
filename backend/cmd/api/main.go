@@ -19,7 +19,9 @@ import (
 	"license-manager/backend/internal/modules/dashboard"
 	"license-manager/backend/internal/modules/departments"
 	"license-manager/backend/internal/modules/devices"
+	"license-manager/backend/internal/modules/licenserequests"
 	"license-manager/backend/internal/modules/licenses"
+	"license-manager/backend/internal/modules/notifications"
 	"license-manager/backend/internal/modules/selfservice"
 	"license-manager/backend/internal/modules/software"
 	"license-manager/backend/internal/modules/users"
@@ -136,6 +138,21 @@ func main() {
 	deviceHandler := devices.NewHTTPHandler(deviceService, authHandler, auditService)
 	assignmentService := assignments.NewService(assignmentRepository, licenseRepository, authRepository, deviceRepository)
 	assignmentHandler := assignments.NewHTTPHandler(assignmentService, authHandler, auditService)
+	var notificationHandler *notifications.HTTPHandler
+	var licenseRequestHandler *licenserequests.HTTPHandler
+	if cfg.StorageDriver == "memory" {
+		notificationService := notifications.NewService(notifications.NewMemoryRepository())
+		notificationHandler = notifications.NewHTTPHandler(notificationService, authHandler)
+		licenseRequestService := licenserequests.NewService(
+			licenserequests.NewMemoryRepository(),
+			softwareRepository,
+			licenseRepository,
+			authRepository,
+			assignmentService,
+			notificationService,
+		)
+		licenseRequestHandler = licenserequests.NewHTTPHandler(licenseRequestService, authHandler, auditService)
+	}
 
 	if cfg.StorageDriver == "memory" && cfg.SeedDemoData {
 		seedResult, seedErr := developmentseed.Seed(context.Background(), developmentseed.Services{
@@ -163,7 +180,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, auditHandler, dashboardHandler, selfServiceHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, auditHandler, dashboardHandler, selfServiceHandler, notificationHandler, licenseRequestHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

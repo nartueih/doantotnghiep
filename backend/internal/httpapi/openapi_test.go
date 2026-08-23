@@ -61,6 +61,15 @@ func TestOpenAPISpecIsValidJSONAndContainsEveryAPIArea(t *testing.T) {
 		"/api/v1/me/devices",
 		"/api/v1/me/licenses",
 		"/api/v1/me/licenses/{assignment_id}/key",
+		"/api/v1/me/requestable-software",
+		"/api/v1/me/license-requests",
+		"/api/v1/me/license-requests/{id}/cancel",
+		"/api/v1/me/notifications",
+		"/api/v1/me/notifications/{id}/read",
+		"/api/v1/me/notifications/read-all",
+		"/api/v1/license-requests",
+		"/api/v1/license-requests/{id}/approve",
+		"/api/v1/license-requests/{id}/reject",
 	} {
 		if _, exists := document.Paths[path]; !exists {
 			t.Fatalf("openapi document is missing path %s", path)
@@ -168,7 +177,7 @@ func checkOpenAPIReferences(t *testing.T, root map[string]any, value any) {
 }
 
 func TestDocumentationRoutesArePublic(t *testing.T) {
-	router := NewRouter(func(context.Context) error { return nil }, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	router := NewRouter(func(context.Context) error { return nil }, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	specResponse := httptest.NewRecorder()
 	router.ServeHTTP(specResponse, httptest.NewRequest(http.MethodGet, "/openapi.json", nil))

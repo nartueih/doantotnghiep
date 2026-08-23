@@ -221,6 +221,7 @@ type requestFixture struct {
 	licenseService      *licenses.Service
 	assignmentService   *assignments.Service
 	notificationService *notifications.Service
+	userRepository      *auth.MemoryRepository
 	product             software.Product
 	license             licenses.License
 	admin               auth.User
@@ -264,7 +265,8 @@ func newRequestFixture(t *testing.T, seats int) requestFixture {
 	return requestFixture{
 		service: service, repository: requestRepository, softwareRepository: softwareRepository,
 		licenseService: licenseService, assignmentService: assignmentService, notificationService: notificationService,
-		product: product, license: license, admin: admin, employee: employee, otherEmployee: otherEmployee,
+		userRepository: userRepository,
+		product:        product, license: license, admin: admin, employee: employee, otherEmployee: otherEmployee,
 	}
 }
 
