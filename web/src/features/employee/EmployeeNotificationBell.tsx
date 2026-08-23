@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '../../components/layout/AdminShell'
+import { normalizeAPIError } from '../../lib/api-error'
 import {
-  LicenseRequestAPIError,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -30,8 +30,9 @@ export function EmployeeNotificationBell({ accessToken, onSessionExpired }: Empl
       setItems(result.items)
       setUnreadCount(result.unread_count)
     } catch (caughtError) {
-      if (caughtError instanceof LicenseRequestAPIError && caughtError.status === 401) onSessionExpired()
-      if (!quiet) setError(caughtError instanceof Error ? caughtError.message : 'Không thể tải thông báo.')
+      const normalized = normalizeAPIError(caughtError, 'Không thể tải thông báo.')
+      if (normalized.status === 401) onSessionExpired()
+      if (!quiet) setError(normalized.message)
     } finally {
       if (!quiet) setIsLoading(false)
     }
@@ -59,7 +60,9 @@ export function EmployeeNotificationBell({ accessToken, onSessionExpired }: Empl
       setItems((current) => current.map((notification) => notification.id === updated.id ? updated : notification))
       setUnreadCount((current) => Math.max(0, current - 1))
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Không thể cập nhật thông báo.')
+      const normalized = normalizeAPIError(caughtError, 'Không thể cập nhật thông báo.')
+      if (normalized.status === 401) onSessionExpired()
+      setError(normalized.message)
     } finally {
       setActionID('')
     }
@@ -73,7 +76,9 @@ export function EmployeeNotificationBell({ accessToken, onSessionExpired }: Empl
       setItems((current) => current.map((item) => item.read_at ? item : { ...item, read_at: now }))
       setUnreadCount(0)
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Không thể cập nhật thông báo.')
+      const normalized = normalizeAPIError(caughtError, 'Không thể cập nhật thông báo.')
+      if (normalized.status === 401) onSessionExpired()
+      setError(normalized.message)
     } finally {
       setActionID('')
     }

@@ -72,17 +72,20 @@ export interface LicenseRequestFilters {
 
 interface APIErrorPayload {
   error?: string
+  code?: string
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 
 export class LicenseRequestAPIError extends Error {
   status: number
+  code?: string
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string) {
     super(message)
     this.name = 'LicenseRequestAPIError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -102,13 +105,15 @@ async function request<T>(path: string, accessToken: string, init?: RequestInit)
   }
   if (!response.ok) {
     let message = 'Không thể xử lý yêu cầu license.'
+    let code: string | undefined
     try {
       const payload = (await response.json()) as APIErrorPayload
       message = payload.error ?? message
+      code = payload.code
     } catch {
       // Keep the fallback for non-JSON responses.
     }
-    throw new LicenseRequestAPIError(message, response.status)
+    throw new LicenseRequestAPIError(message, response.status, code)
   }
   return (await response.json()) as T
 }

@@ -9,8 +9,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"license-manager/backend/internal/modules/assignments"
 	"license-manager/backend/internal/modules/audit"
 	"license-manager/backend/internal/modules/auth"
+	"license-manager/backend/internal/modules/licenses"
+	"license-manager/backend/internal/modules/software"
 )
 
 func TestLicenseRequestRoutesRequireAuthentication(t *testing.T) {
@@ -106,16 +109,39 @@ func TestEmployeeCannotCancelAnotherUsersRequest(t *testing.T) {
 	}
 }
 
-func TestApprovalMapsProductMismatchAndNoSeatErrors(t *testing.T) {
+func TestApprovalReturnsMachineReadableProductMismatch(t *testing.T) {
 	fixture := newRequestHTTPFixture(t)
 	item, _ := fixture.service.Create(t.Context(), fixture.employee.ID, validCreateInput(fixture.requestFixture))
-	mismatch := performJSONRequest(fixture.router, http.MethodPatch, "/api/v1/license-requests/"+item.ID+"/approve", fixture.adminToken, `{"license_id":"missing"}`)
-	if mismatch.Code != http.StatusNotFound {
-		t.Fatalf("expected missing license 404, got %d: %s", mismatch.Code, mismatch.Body.String())
+	otherProduct, err := software.NewService(fixture.softwareRepository).Create(t.Context(), software.Input{Name: "Office", Publisher: "Microsoft"})
+	if err != nil {
+		t.Fatal(err)
 	}
-	duplicate := performJSONRequest(fixture.router, http.MethodPost, "/api/v1/me/license-requests", fixture.employeeToken, `{"software_product_id":"`+fixture.product.ID+`","priority":"normal","reason":"Trùng"}`)
-	if duplicate.Code != http.StatusConflict {
-		t.Fatalf("expected duplicate 409, got %d: %s", duplicate.Code, duplicate.Body.String())
+	otherLicense, err := fixture.licenseService.Create(t.Context(), licenses.Input{
+		SoftwareProductID: otherProduct.ID, Name: "Office Business", LicenseType: licenses.TypeSubscription,
+		AssignmentType: licenses.AssignmentUser, SeatCount: 1, ExpiresAt: "2099-01-01",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := performJSONRequest(fixture.router, http.MethodPatch, "/api/v1/license-requests/"+item.ID+"/approve", fixture.adminToken, `{"license_id":"`+otherLicense.ID+`"}`)
+	if response.Code != http.StatusUnprocessableEntity || !strings.Contains(response.Body.String(), `"code":"license_product_mismatch"`) {
+		t.Fatalf("expected product mismatch 422 with code, got %d: %s", response.Code, response.Body.String())
+	}
+}
+
+func TestApprovalReturnsMachineReadableNoAvailableSeats(t *testing.T) {
+	fixture := newRequestHTTPFixtureWithSeats(t, 1)
+	item, _ := fixture.service.Create(t.Context(), fixture.employee.ID, validCreateInput(fixture.requestFixture))
+	if _, err := fixture.assignmentService.Create(t.Context(), fixture.admin.ID, assignments.CreateInput{
+		LicenseID: fixture.license.ID, UserID: fixture.otherEmployee.ID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	response := performJSONRequest(fixture.router, http.MethodPatch, "/api/v1/license-requests/"+item.ID+"/approve", fixture.adminToken, `{"license_id":"`+fixture.license.ID+`"}`)
+	if response.Code != http.StatusConflict || !strings.Contains(response.Body.String(), `"code":"no_available_seats"`) {
+		t.Fatalf("expected no-seat 409 with code, got %d: %s", response.Code, response.Body.String())
 	}
 }
 
@@ -128,9 +154,13 @@ type requestHTTPFixture struct {
 }
 
 func newRequestHTTPFixture(t *testing.T) requestHTTPFixture {
+	return newRequestHTTPFixtureWithSeats(t, 2)
+}
+
+func newRequestHTTPFixtureWithSeats(t *testing.T, seats int) requestHTTPFixture {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
-	fixture := newRequestFixture(t, 2)
+	fixture := newRequestFixture(t, seats)
 	tokens, err := auth.NewTokenManager(
 		"test-secret-with-at-least-thirty-two-characters",
 		"test-issuer",

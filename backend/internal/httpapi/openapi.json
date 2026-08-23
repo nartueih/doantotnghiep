@@ -521,7 +521,7 @@
       "ServiceUnavailable": { "description": "Storage chưa sẵn sàng", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthStatus" } } } }
     },
     "schemas": {
-      "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "string" } } },
+      "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "string" }, "code": { "type": "string", "description": "Mã lỗi nghiệp vụ ổn định khi endpoint cung cấp" } } },
       "HealthStatus": { "type": "object", "required": ["status"], "properties": { "status": { "type": "string", "example": "ok" } } },
       "APIInfo": { "type": "object", "properties": { "name": { "type": "string" }, "version": { "type": "string" } } },
       "LoginRequest": { "type": "object", "required": ["email", "password"], "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string", "format": "password" } } },

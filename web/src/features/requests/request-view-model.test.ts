@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { LicenseItem } from '../../lib/license-api.ts'
+import { isNoAvailableSeatsConflict, normalizeAPIError } from '../../lib/api-error.ts'
 import {
   eligibleLicenses,
   rejectReasonLabel,
@@ -52,4 +53,27 @@ test('request labels are Vietnamese and deterministic', () => {
   assert.equal(rejectReasonLabel('out_of_stock'), 'Tạm hết license')
   assert.equal(rejectReasonLabel('not_approved'), 'Không được phê duyệt')
   assert.equal(rejectReasonLabel('other'), 'Lý do khác')
+})
+
+test('normalizeAPIError preserves status and machine-readable code across API clients', () => {
+  const foreignAPIError = Object.assign(new Error('Seat unavailable'), {
+    status: 409,
+    code: 'no_available_seats',
+  })
+
+  assert.deepEqual(normalizeAPIError(foreignAPIError, 'Fallback'), {
+    message: 'Seat unavailable',
+    status: 409,
+    code: 'no_available_seats',
+  })
+  assert.deepEqual(normalizeAPIError(null, 'Fallback'), {
+    message: 'Fallback',
+    status: 0,
+  })
+})
+
+test('only the no-available-seats conflict receives exhausted-seat guidance', () => {
+  assert.equal(isNoAvailableSeatsConflict({ message: 'No seats', status: 409, code: 'no_available_seats' }), true)
+  assert.equal(isNoAvailableSeatsConflict({ message: 'Already handled', status: 409, code: 'request_not_pending' }), false)
+  assert.equal(isNoAvailableSeatsConflict({ message: 'No seats', status: 422, code: 'no_available_seats' }), false)
 })

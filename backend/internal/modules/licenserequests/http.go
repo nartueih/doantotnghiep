@@ -167,16 +167,34 @@ func (h *HTTPHandler) reject(c *gin.Context) {
 func writeRequestError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrInvalidData), errors.Is(err, ErrInvalidPriority), errors.Is(err, ErrInvalidDecision):
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		writeCodedRequestError(c, http.StatusBadRequest, "invalid_request", err)
 	case errors.Is(err, ErrReviewerUnavailable):
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		writeCodedRequestError(c, http.StatusForbidden, "reviewer_unavailable", err)
 	case errors.Is(err, ErrNotFound), errors.Is(err, ErrSoftwareNotFound), errors.Is(err, ErrLicenseNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-	case errors.Is(err, ErrPendingDuplicate), errors.Is(err, ErrInvalidState), errors.Is(err, assignments.ErrLicenseInactive), errors.Is(err, assignments.ErrDuplicate), errors.Is(err, assignments.ErrNoAvailableSeats):
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-	case errors.Is(err, ErrLicenseProductMismatch), errors.Is(err, ErrRequesterUnavailable), errors.Is(err, assignments.ErrAssignmentType), errors.Is(err, assignments.ErrTargetUnavailable):
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		writeCodedRequestError(c, http.StatusNotFound, "not_found", err)
+	case errors.Is(err, ErrPendingDuplicate):
+		writeCodedRequestError(c, http.StatusConflict, "pending_request_exists", err)
+	case errors.Is(err, ErrInvalidState):
+		writeCodedRequestError(c, http.StatusConflict, "request_not_pending", err)
+	case errors.Is(err, assignments.ErrLicenseInactive):
+		writeCodedRequestError(c, http.StatusConflict, "license_inactive", err)
+	case errors.Is(err, assignments.ErrDuplicate):
+		writeCodedRequestError(c, http.StatusConflict, "duplicate_assignment", err)
+	case errors.Is(err, assignments.ErrNoAvailableSeats):
+		writeCodedRequestError(c, http.StatusConflict, "no_available_seats", err)
+	case errors.Is(err, ErrLicenseProductMismatch):
+		writeCodedRequestError(c, http.StatusUnprocessableEntity, "license_product_mismatch", err)
+	case errors.Is(err, ErrRequesterUnavailable):
+		writeCodedRequestError(c, http.StatusUnprocessableEntity, "requester_unavailable", err)
+	case errors.Is(err, assignments.ErrAssignmentType):
+		writeCodedRequestError(c, http.StatusUnprocessableEntity, "assignment_type_mismatch", err)
+	case errors.Is(err, assignments.ErrTargetUnavailable):
+		writeCodedRequestError(c, http.StatusUnprocessableEntity, "assignment_target_unavailable", err)
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 	}
+}
+
+func writeCodedRequestError(c *gin.Context, status int, code string, err error) {
+	c.JSON(status, gin.H{"error": err.Error(), "code": code})
 }

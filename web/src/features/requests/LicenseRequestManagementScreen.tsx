@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AdminShell, Icon, type AdminPage } from '../../components/layout/AdminShell'
 import type { AuthSession } from '../../lib/auth-api'
 import { getLicenses, type LicenseItem } from '../../lib/license-api'
+import { isNoAvailableSeatsConflict, normalizeAPIError } from '../../lib/api-error'
 import {
   approveLicenseRequest,
   LicenseRequestAPIError,
@@ -73,9 +74,8 @@ export function LicenseRequestManagementScreen({ session, onNavigate, onLogout }
       })
       .catch((caughtError: unknown) => {
         if (cancelled) return
-        setError(caughtError instanceof LicenseRequestAPIError
-          ? caughtError
-          : new LicenseRequestAPIError(caughtError instanceof Error ? caughtError.message : 'Không thể tải yêu cầu license.', 0))
+        const normalized = normalizeAPIError(caughtError, 'Không thể tải yêu cầu license.')
+        setError(new LicenseRequestAPIError(normalized.message, normalized.status, normalized.code))
       })
       .finally(() => { if (!cancelled) setIsLoading(false) })
     return () => { cancelled = true }
@@ -121,8 +121,14 @@ export function LicenseRequestManagementScreen({ session, onNavigate, onLogout }
       setSuccessMessage(`Đã duyệt ${approved.software_product_name} cho ${approved.requester_name}.`)
       setReloadKey((value) => value + 1)
     } catch (caughtError) {
-      let message = caughtError instanceof Error ? caughtError.message : 'Không thể duyệt yêu cầu.'
-      if (caughtError instanceof LicenseRequestAPIError && caughtError.status === 409) {
+      const normalized = normalizeAPIError(caughtError, 'Không thể duyệt yêu cầu.')
+      if (normalized.status === 401) {
+        setApproveDialog(null)
+        await onLogout()
+        return
+      }
+      let message = normalized.message
+      if (isNoAvailableSeatsConflict(normalized)) {
         message = 'License vừa hết seat. Hãy từ chối với lý do Tạm hết license để phản hồi nhân viên.'
       }
       setApproveDialog({ ...current, loading: false, error: message })
@@ -142,7 +148,13 @@ export function LicenseRequestManagementScreen({ session, onNavigate, onLogout }
       setSuccessMessage(`Đã gửi phản hồi cho ${rejected.requester_name}.`)
       setReloadKey((value) => value + 1)
     } catch (caughtError) {
-      setRejectDialog({ ...current, loading: false, error: caughtError instanceof Error ? caughtError.message : 'Không thể từ chối yêu cầu.' })
+      const normalized = normalizeAPIError(caughtError, 'Không thể từ chối yêu cầu.')
+      if (normalized.status === 401) {
+        setRejectDialog(null)
+        await onLogout()
+        return
+      }
+      setRejectDialog({ ...current, loading: false, error: normalized.message })
     }
   }
 
