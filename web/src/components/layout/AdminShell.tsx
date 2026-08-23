@@ -2,8 +2,8 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthSession, UserRole } from '../../lib/auth-api'
 import './AdminShell.css'
 
-export type AdminPage = 'dashboard' | 'software' | 'licenses' | 'assignments' | 'devices' | 'users' | 'departments' | 'audit'
-export type IconName = 'grid' | 'software' | 'key' | 'assignment' | 'device' | 'users' |
+export type AdminPage = 'dashboard' | 'software' | 'licenses' | 'assignments' | 'requests' | 'devices' | 'users' | 'departments' | 'audit'
+export type IconName = 'grid' | 'software' | 'key' | 'assignment' | 'request' | 'device' | 'users' |
   'department' | 'audit' | 'bell' | 'refresh' | 'search' | 'chevron' | 'trend' |
   'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'archive' | 'undo' | 'settings' | 'close'
 
@@ -28,6 +28,7 @@ const navigation: Array<{ label: string; icon: IconName; page?: AdminPage }> = [
   { label: 'Phần mềm', icon: 'software', page: 'software' },
   { label: 'License', icon: 'key', page: 'licenses' },
   { label: 'Cấp phát', icon: 'assignment', page: 'assignments' },
+  { label: 'Yêu cầu', icon: 'request', page: 'requests' },
   { label: 'Thiết bị', icon: 'device', page: 'devices' },
   { label: 'Người dùng', icon: 'users', page: 'users' },
   { label: 'Phòng ban', icon: 'department', page: 'departments' },
@@ -59,11 +60,11 @@ export function AdminShell({ session, activePage, title, onNavigate, onLogout, a
 
         <nav aria-label="Điều hướng chính">
           <span className="admin-nav-label">Quản lý</span>
-          {navigation.slice(0, 5).map((item) => (
+          {navigation.slice(0, 6).map((item) => (
             <NavItem key={item.label} item={item} activePage={activePage} onNavigate={navigate} />
           ))}
           <span className="admin-nav-label second">Hệ thống</span>
-          {navigation.slice(5).map((item) => (
+          {navigation.slice(6).map((item) => (
             <NavItem key={item.label} item={item} activePage={activePage} onNavigate={navigate} />
           ))}
         </nav>
@@ -123,6 +124,7 @@ export function Icon({ name }: { name: IconName }) {
     software: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M8 4v5" /></>,
     key: <><circle cx="8" cy="15" r="4" /><path d="M11 12l8-8M16 7l3 3M14 9l2 2" /></>,
     assignment: <><path d="M9 5H5a2 2 0 00-2 2v12h16v-5" /><path d="M13 3h8v8M21 3l-10 10" /></>,
+    request: <><path d="M5 4h14v16H5zM8 8h8M8 12h5M8 16h7" /><path d="M16 2v4M8 2v4" /></>,
     device: <><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M9 18h6" /></>,
     users: <><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></>,
     department: <><path d="M3 21h18M5 21V8l7-5 7 5v13M9 12h2M13 12h2M9 16h2M13 16h2" /></>,
