@@ -9,6 +9,8 @@ Hệ thống quản lý thiết bị và giấy phép phần mềm trong doanh n
 - Quản lý danh mục phần mềm và license.
 - Theo dõi số lượng seat, ngày hết hạn và chi phí.
 - Cấp phát/thu hồi license cho người dùng hoặc thiết bị.
+- Nhân viên gửi yêu cầu cấp license; Admin/IT duyệt, từ chối và phản hồi ngay trong website.
+- Thông báo website cho kết quả xử lý yêu cầu.
 - Cảnh báo license sắp hết hạn.
 - Ghi nhật ký các thao tác quan trọng.
 
@@ -58,6 +60,10 @@ Luồng nhân viên tự xem thiết bị và license của mình nằm trong [h
 Giao diện cổng thông tin riêng cho nhân viên được kiểm tra theo [hướng dẫn Web Employee Portal](docs/web-employee-portal-testing.md).
 
 Quyền xem activation key có kiểm soát cho Employee được kiểm tra theo [hướng dẫn Employee License Key Access](docs/employee-license-key-testing.md).
+
+Luồng yêu cầu cấp license và thông báo website được kiểm tra theo [hướng dẫn License Request & Notification](docs/license-request-notification-testing.md). Hai module mới hiện chỉ hoạt động với `STORAGE_DRIVER=memory`; dữ liệu sẽ mất khi backend dừng.
+
+Các API chính gồm `/api/v1/me/license-requests`, `/api/v1/me/notifications` dành cho Employee và `/api/v1/license-requests` dành cho Admin/IT Manager.
 
 Hợp đồng API và cách sử dụng Swagger UI nằm trong [hướng dẫn OpenAPI](docs/openapi-testing.md).
 
