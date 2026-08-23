@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Icon } from '../../components/layout/AdminShell'
 import type { AuthSession } from '../../lib/auth-api'
 import type { DeviceItem } from '../../lib/device-api'
@@ -10,6 +10,8 @@ import {
   type MyAssignedLicense,
 } from '../../lib/self-service-api'
 import './EmployeePortalScreen.css'
+import { EmployeeLicenseRequests } from './EmployeeLicenseRequests'
+import { EmployeeNotificationBell } from './EmployeeNotificationBell'
 
 interface EmployeePortalScreenProps {
   session: AuthSession
@@ -94,6 +96,7 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
   }, [devices.length, licenses])
 
   const initials = userInitials(session.user.full_name)
+  const handleSessionExpired = useCallback(() => setError({ message: 'Phiên đăng nhập đã hết hạn.', status: 401 }), [])
 
   async function confirmKeyReveal() {
     if (!keyDialog) return
@@ -122,7 +125,8 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
   return <div className="employee-portal">
     <header className="employee-header">
       <a className="employee-brand" href="#/portal" aria-label="Trang chủ License Manager"><span>LM</span><div><strong>License Manager</strong><small>Cổng thông tin nhân viên</small></div></a>
-      <nav aria-label="Điều hướng cổng nhân viên"><a href="#my-devices">Thiết bị của tôi</a><a href="#my-licenses">License của tôi</a></nav>
+      <nav aria-label="Điều hướng cổng nhân viên"><a href="#my-devices">Thiết bị của tôi</a><a href="#my-licenses">License của tôi</a><a href="#my-license-requests">Yêu cầu license</a></nav>
+      <EmployeeNotificationBell accessToken={session.tokens.access_token} onSessionExpired={handleSessionExpired} />
       <div className="employee-account"><span>{initials}</span><div><strong>{session.user.full_name}</strong><small>{session.user.employee_code}</small></div><button type="button" onClick={onLogout}>Đăng xuất</button></div>
     </header>
 
@@ -152,6 +156,7 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
             {isLoading ? <PortalLoading count={3} /> : filteredLicenses.length ? <div className="employee-license-list">{filteredLicenses.map((license) => <LicenseCard license={license} onViewKey={(item) => { setCopied(false); setKeyDialog({ license: item, loading: false }) }} key={license.assignment_id} />)}</div> : <PortalEmpty icon="key" title={licenses.length ? 'Không có license phù hợp' : 'Bạn chưa được cấp license'} detail={licenses.length ? 'Hãy chọn một nhóm license khác.' : 'License được cấp trực tiếp hoặc qua thiết bị sẽ xuất hiện tại đây.'} />}
           </section>
         </div>
+        <EmployeeLicenseRequests accessToken={session.tokens.access_token} onSessionExpired={handleSessionExpired} />
       </>}
 
       <section className="employee-privacy"><Icon name="check" /><div><strong>Dữ liệu cá nhân được bảo vệ</strong><p>Portal chỉ hiển thị tài sản thuộc tài khoản đang đăng nhập. Key chỉ được giải mã khi IT cho phép và mọi lần xem đều được ghi Audit Log.</p></div></section>
