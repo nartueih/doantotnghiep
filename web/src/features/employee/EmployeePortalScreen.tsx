@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Icon } from '../../components/layout/AdminShell'
+import { SoftwareCategoryBadge } from '../../components/software/SoftwareCategoryBadge'
 import type { AuthSession } from '../../lib/auth-api'
 import type { DeviceItem } from '../../lib/device-api'
 import {
@@ -95,7 +96,6 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
     return { devices: devices.length, licenses: licenses.length, direct, viaDevice, attention }
   }, [devices.length, licenses])
 
-  const initials = userInitials(session.user.full_name)
   const handleSessionExpired = useCallback(() => setError({ message: 'Phiên đăng nhập đã hết hạn.', status: 401 }), [])
 
   async function confirmKeyReveal() {
@@ -127,13 +127,13 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
       <a className="employee-brand" href="#/portal" aria-label="Trang chủ License Manager"><span>LM</span><div><strong>License Manager</strong><small>Cổng thông tin nhân viên</small></div></a>
       <nav aria-label="Điều hướng cổng nhân viên"><a href="#my-devices">Thiết bị của tôi</a><a href="#my-licenses">License của tôi</a><a href="#my-license-requests">Yêu cầu license</a></nav>
       <EmployeeNotificationBell accessToken={session.tokens.access_token} onSessionExpired={handleSessionExpired} />
-      <div className="employee-account"><span>{initials}</span><div><strong>{session.user.full_name}</strong><small>{session.user.employee_code}</small></div><button type="button" onClick={onLogout}>Đăng xuất</button></div>
+      <div className="employee-account"><span className="employee-account-avatar"><Icon name="users" /></span><div><strong>{session.user.full_name}</strong><small>{session.user.employee_code}</small></div><button type="button" onClick={onLogout}>Đăng xuất</button></div>
     </header>
 
     <main className="employee-main">
       <section className="employee-hero">
         <div className="employee-hero-copy"><span className="employee-eyebrow">Không gian cá nhân</span><h1>Chào {firstName(session.user.full_name)},<br />mọi tài sản của bạn ở đây.</h1><p>Theo dõi thiết bị công ty và quyền sử dụng phần mềm đang được cấp cho bạn trong một nơi duy nhất.</p><div className="employee-profile-meta"><span><Icon name="users" />{session.user.department_name || 'Chưa có phòng ban'}</span><span><Icon name="check" />Tài khoản đang hoạt động</span></div></div>
-        <div className="employee-hero-card"><span className="employee-hero-avatar">{initials}</span><div><small>Hồ sơ nhân viên</small><strong>{session.user.full_name}</strong><p>{session.user.email}</p></div><dl><div><dt>Mã nhân viên</dt><dd>{session.user.employee_code}</dd></div><div><dt>Phòng ban</dt><dd>{session.user.department_name || 'Chưa phân phòng'}</dd></div></dl></div>
+        <div className="employee-hero-card"><span className="employee-hero-avatar"><Icon name="users" /></span><div><small>Hồ sơ nhân viên</small><strong>{session.user.full_name}</strong><p>{session.user.email}</p></div><dl><div><dt>Mã nhân viên</dt><dd>{session.user.employee_code}</dd></div><div><dt>Phòng ban</dt><dd>{session.user.department_name || 'Chưa phân phòng'}</dd></div></dl></div>
       </section>
 
       <section className="employee-overview" aria-label="Tổng quan tài sản cá nhân">
@@ -183,7 +183,7 @@ function LicenseCard({ license, onViewKey }: { license: MyAssignedLicense; onVie
   const days = daysUntil(license.expires_at)
   const attention = licenseNeedsAttention(license)
   return <article className="employee-license-card">
-    <span className="employee-license-mark">{licenseInitials(license.license_name)}</span>
+    <SoftwareCategoryBadge name={license.license_name} size="large" />
     <div className="employee-license-info"><div><strong>{license.license_name}</strong><span className={`employee-license-status ${attention ? 'attention' : ''}`}>{licenseStatusLabel(license, days)}</span></div><p>{license.notes || 'License phục vụ công việc của bạn.'}</p><div className="employee-license-meta"><span><Icon name="assignment" />{license.assignment_source === 'device' ? `Theo thiết bị ${license.device_asset_code || ''}` : 'Cấp trực tiếp cho bạn'}</span><span><Icon name="calendar" />{license.license_type === 'perpetual' && !license.expires_at ? 'Vĩnh viễn' : `Hết hạn ${formatDate(license.expires_at, 'chưa xác định')}`}</span></div></div>
     <div className="employee-license-actions"><span className="employee-license-type">{license.license_type === 'perpetual' ? 'Vĩnh viễn' : 'Thuê bao'}</span>{license.can_view_key && <button type="button" onClick={() => onViewKey(license)}><Icon name="key" />Xem key</button>}</div>
   </article>
@@ -240,12 +240,4 @@ function formatDate(value: string | undefined, fallback: string) {
 
 function firstName(fullName: string) {
   return fullName.trim().split(/\s+/).slice(-1)[0] || 'bạn'
-}
-
-function userInitials(fullName: string) {
-  return fullName.split(/\s+/).filter(Boolean).slice(-2).map((part) => part[0]).join('').toUpperCase() || 'NV'
-}
-
-function licenseInitials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'SW'
 }

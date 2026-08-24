@@ -1,5 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AdminShell, Icon, type AdminPage, type IconName } from '../../components/layout/AdminShell'
+import { SoftwareCategoryBadge } from '../../components/software/SoftwareCategoryBadge'
 import type { AuthSession } from '../../lib/auth-api'
 import {
   DashboardAPIError,
@@ -8,6 +9,7 @@ import {
   type DashboardSummary,
   type LicenseAlert,
 } from '../../lib/dashboard-api'
+import { criticalLicenseAlerts } from './dashboard-view-model'
 import './DashboardScreen.css'
 
 interface DashboardScreenProps {
@@ -44,6 +46,8 @@ export function DashboardScreen({ session, onNavigate, onLogout }: DashboardScre
   const [reloadKey, setReloadKey] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<DashboardAPIError | null>(null)
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const notificationRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -76,7 +80,28 @@ export function DashboardScreen({ session, onNavigate, onLogout }: DashboardScre
     }
   }, [expiryWindow, reloadKey, session.tokens.access_token])
 
-  const criticalAlerts = alerts.filter((item) => item.severity === 'critical').length
+  useEffect(() => {
+    function closeNotification(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) setIsNotificationOpen(false)
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsNotificationOpen(false)
+    }
+    document.addEventListener('mousedown', closeNotification)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('mousedown', closeNotification)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [])
+
+  const criticalItems = criticalLicenseAlerts(alerts)
+
+  function showAllAlerts() {
+    setIsNotificationOpen(false)
+    document.getElementById('license-alerts')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   const headerActions = <div className="topbar-actions">
     <button
       className="refresh-button"
@@ -87,10 +112,30 @@ export function DashboardScreen({ session, onNavigate, onLogout }: DashboardScre
       <Icon name="refresh" />
       <span>Làm mới</span>
     </button>
-    <button className="notification-button" type="button" aria-label={`${criticalAlerts} cảnh báo nghiêm trọng`}>
-      <Icon name="bell" />
-      {criticalAlerts > 0 && <span>{criticalAlerts}</span>}
-    </button>
+    <div className="admin-alert-notifications" ref={notificationRef}>
+      <button
+        className="notification-button"
+        type="button"
+        aria-label={`${criticalItems.length} cảnh báo license nghiêm trọng`}
+        aria-expanded={isNotificationOpen}
+        aria-controls="admin-license-alert-panel"
+        onClick={() => setIsNotificationOpen((open) => !open)}
+      >
+        <Icon name="bell" />
+        {criticalItems.length > 0 && <span>{criticalItems.length > 99 ? '99+' : criticalItems.length}</span>}
+      </button>
+      {isNotificationOpen && <section id="admin-license-alert-panel" className="admin-alert-panel" aria-label="Cảnh báo license nghiêm trọng">
+        <header><div><strong>Cảnh báo license</strong><span>{criticalItems.length} mục nghiêm trọng</span></div><button type="button" onClick={() => setIsNotificationOpen(false)} aria-label="Đóng"><Icon name="close" /></button></header>
+        {isLoading ? <div className="admin-alert-loading"><span /><span /></div> : criticalItems.length ? <div className="admin-alert-list">
+          {criticalItems.map((alert) => <button type="button" key={alert.license_id} onClick={() => { setIsNotificationOpen(false); onNavigate('licenses') }}>
+            <SoftwareCategoryBadge name={alert.license_name} size="compact" />
+            <span><strong>{alert.license_name}</strong><small>{alert.alert_types.map((type) => alertTypeLabels[type] ?? type).join(' · ')}</small><p>{formatAlertNotification(alert)}</p></span>
+            <Icon name="chevron" />
+          </button>)}
+        </div> : <div className="admin-alert-empty"><Icon name="check" /><strong>Không có cảnh báo nghiêm trọng</strong><p>Các license hiện chưa cần xử lý khẩn cấp.</p></div>}
+        <footer><button type="button" onClick={showAllAlerts}>Xem tất cả cảnh báo</button></footer>
+      </section>}
+    </div>
   </div>
 
   return (
@@ -233,7 +278,7 @@ function AlertsTable({ alerts, expiryWindow, onWindowChange, isLoading }: {
   isLoading: boolean
 }) {
   return (
-    <section className="panel alerts-panel">
+    <section className="panel alerts-panel" id="license-alerts">
       <div className="alerts-heading">
         <PanelHeading title="License cần chú ý" subtitle="Sắp xếp theo mức độ ưu tiên" />
         <div className="window-filter" aria-label="Khoảng thời gian hết hạn">
@@ -342,4 +387,10 @@ function formatExpiry(alert: LicenseAlert): string {
   if (alert.days_until_expiry < 0) return `Quá hạn ${Math.abs(alert.days_until_expiry)} ngày`
   if (alert.days_until_expiry === 0) return 'Hết hạn hôm nay'
   return `Còn ${alert.days_until_expiry} ngày`
+}
+
+function formatAlertNotification(alert: LicenseAlert): string {
+  const expiry = formatExpiry(alert)
+  const seat = `${alert.used_seats}/${alert.seat_count} seat đã dùng`
+  return alert.expires_at ? `${expiry} · ${seat}` : seat
 }

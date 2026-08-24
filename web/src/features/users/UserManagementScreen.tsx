@@ -166,7 +166,7 @@ export function UserManagementScreen({ session, onNavigate, onLogout }: UserMana
 function UserRow({ user, currentUserID, canManage, onStatus }: { user: AuthUser; currentUserID: string; canManage: boolean; onStatus: (user: AuthUser) => void }) {
   const isCurrentUser = user.id === currentUserID
   return <tr>
-    <td><div className="user-identity"><span className={`user-avatar ${user.role}`}>{initials(user.full_name)}</span><div><strong>{user.full_name}{isCurrentUser && <small>Bạn</small>}</strong><span>{user.email}</span></div></div></td>
+    <td><div className="user-identity"><span className={`user-avatar ${user.role}`}><Icon name="users" /></span><div><strong>{user.full_name}{isCurrentUser && <small>Bạn</small>}</strong><span>{user.email}</span></div></div></td>
     <td><span className="employee-code">{user.employee_code}</span></td>
     <td><span className={user.department_name ? 'department-name' : 'department-name muted'}>{user.department_name || 'Chưa phân phòng ban'}</span></td>
     <td><span className={`user-role ${user.role}`}>{roleLabels[user.role]}</span></td>
@@ -255,10 +255,6 @@ function UserError({ error, onRetry, onLogout }: { error: UserAPIError; onRetry:
   const expired = error.status === 401
   const forbidden = error.status === 403
   return <div className="user-error"><Icon name="alert" /><strong>{expired ? 'Phiên đăng nhập đã hết hạn' : forbidden ? 'Bạn không có quyền xem người dùng' : 'Không thể tải danh sách người dùng'}</strong><p>{expired ? 'Đăng nhập lại để tiếp tục.' : forbidden ? 'Chỉ Admin và Quản lý IT được truy cập module này.' : translateUserError(error.message)}</p><button type="button" onClick={expired ? onLogout : onRetry}>{expired ? 'Đăng nhập lại' : 'Thử lại'}</button></div>
-}
-
-function initials(name: string) {
-  return name.split(' ').filter(Boolean).slice(-2).map((part) => part[0]).join('').toUpperCase() || 'U'
 }
 
 function formatDate(value: string) {
