@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"license-manager/backend/internal/platform/database"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -40,7 +41,7 @@ func (r *PostgresRepository) FindByID(ctx context.Context, userID string) (User,
 
 func (r *PostgresRepository) findUser(ctx context.Context, query string, argument any) (User, error) {
 	var user User
-	err := r.pool.QueryRow(ctx, query, argument).Scan(
+	err := database.Querier(ctx, r.pool).QueryRow(ctx, query, argument).Scan(
 		&user.ID,
 		&user.Email,
 		&user.PasswordHash,
