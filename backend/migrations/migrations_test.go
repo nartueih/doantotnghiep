@@ -1,8 +1,11 @@
 package migrations
 
 import (
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestAllReturnsOrderedUniqueMigrations(t *testing.T) {
@@ -34,5 +37,47 @@ func TestAllReturnsOrderedUniqueMigrations(t *testing.T) {
 func TestParseVersionRejectsInvalidFilename(t *testing.T) {
 	if _, err := parseVersion("license_requests.sql"); err == nil {
 		t.Fatal("expected an invalid migration filename error")
+	}
+}
+
+func TestUpStatusAndRequireCurrent(t *testing.T) {
+	databaseURL := os.Getenv("TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("TEST_DATABASE_URL is not set")
+	}
+
+	config, err := pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		t.Fatalf("parse test database URL: %v", err)
+	}
+	if !strings.HasSuffix(config.ConnConfig.Database, "_test") {
+		t.Fatalf("refusing to migrate non-test database %q", config.ConnConfig.Database)
+	}
+
+	pool, err := pgxpool.NewWithConfig(t.Context(), config)
+	if err != nil {
+		t.Fatalf("open test database: %v", err)
+	}
+	t.Cleanup(pool.Close)
+
+	if err := Up(t.Context(), pool); err != nil {
+		t.Fatalf("apply migrations: %v", err)
+	}
+
+	statuses, err := Status(t.Context(), pool)
+	if err != nil {
+		t.Fatalf("load migration status: %v", err)
+	}
+	if len(statuses) != LatestVersion {
+		t.Fatalf("got %d migration statuses, want %d", len(statuses), LatestVersion)
+	}
+	for _, status := range statuses {
+		if status.AppliedAt == nil {
+			t.Fatalf("migration %03d is not applied", status.Version)
+		}
+	}
+
+	if err := RequireCurrent(t.Context(), pool); err != nil {
+		t.Fatalf("require current schema: %v", err)
 	}
 }
