@@ -1,8 +1,8 @@
 # Kiểm thử yêu cầu cấp license và thông báo website
 
-Tài liệu này kiểm tra luồng lưu trữ `memory`: nhân viên gửi hoặc hủy yêu cầu, Admin/IT duyệt hoặc từ chối, hệ thống tự cấp phát khi duyệt và gửi thông báo trong website cho nhân viên.
+Tài liệu này kiểm tra luồng lưu trữ PostgreSQL: nhân viên gửi hoặc hủy yêu cầu, Admin/IT duyệt hoặc từ chối, hệ thống tự cấp phát khi duyệt và gửi thông báo trong website cho nhân viên.
 
-> Dữ liệu yêu cầu và thông báo chỉ nằm trong bộ nhớ. Mỗi lần dừng backend, toàn bộ dữ liệu của lần chạy đó sẽ bị xóa.
+> Hoàn thành [thiết lập PostgreSQL local](postgresql-local-setup.md) trước. Dữ liệu phải còn nguyên sau khi backend khởi động lại.
 
 ## 1. Khởi động backend
 
@@ -10,8 +10,8 @@ Mở Terminal thứ nhất trong VS Code:
 
 ```powershell
 Set-Location "D:\Đồ án\backend"
-$env:STORAGE_DRIVER = "memory"
-$env:SEED_DEMO_DATA = "true"
+$env:STORAGE_DRIVER = "postgres"
+$env:SEED_DEMO_DATA = "false"
 $env:JWT_SECRET = "dev-only-secret-change-before-production-123456"
 go run ./cmd/api
 ```
