@@ -120,3 +120,7 @@ type AssignmentCreator interface {
 type NotificationCreator interface {
 	Create(context.Context, notifications.CreateInput) (notifications.Notification, error)
 }
+
+type TransactionManager interface {
+	WithinTransaction(context.Context, func(context.Context) error) error
+}

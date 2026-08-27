@@ -13,6 +13,7 @@ import (
 	"license-manager/backend/internal/modules/licenses"
 	"license-manager/backend/internal/modules/notifications"
 	"license-manager/backend/internal/modules/software"
+	"license-manager/backend/internal/platform/database"
 	"license-manager/backend/internal/platform/securevalue"
 )
 
@@ -214,6 +215,70 @@ func TestConcurrentApprovalCreatesExactlyOneAssignment(t *testing.T) {
 	}
 }
 
+func TestDecisionWorkflowsUseTransactionOnlyAfterValidation(t *testing.T) {
+	t.Run("approve", func(t *testing.T) {
+		fixture := newRequestFixture(t, 2)
+		transactions := &recordingTransactionManager{}
+		fixture.service.transactions = transactions
+		item, err := fixture.service.Create(t.Context(), fixture.employee.ID, validCreateInput(fixture))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := fixture.service.Approve(t.Context(), fixture.admin.ID, item.ID, ApproveInput{
+			LicenseID: fixture.license.ID,
+		}); err != nil {
+			t.Fatalf("approve request: %v", err)
+		}
+		if transactions.calls != 1 {
+			t.Fatalf("approve opened %d transactions, want 1", transactions.calls)
+		}
+
+		if _, err := fixture.service.Approve(t.Context(), "", item.ID, ApproveInput{}); !errors.Is(err, ErrInvalidData) {
+			t.Fatalf("expected validation error, got %v", err)
+		}
+		if transactions.calls != 1 {
+			t.Fatalf("invalid approval opened a transaction; calls=%d", transactions.calls)
+		}
+	})
+
+	t.Run("reject", func(t *testing.T) {
+		fixture := newRequestFixture(t, 2)
+		transactions := &recordingTransactionManager{}
+		fixture.service.transactions = transactions
+		item, err := fixture.service.Create(t.Context(), fixture.employee.ID, validCreateInput(fixture))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := fixture.service.Reject(t.Context(), fixture.admin.ID, item.ID, RejectInput{
+			DecisionReason: DecisionOutOfStock,
+			ResponseNote:   "Tạm hết license",
+		}); err != nil {
+			t.Fatalf("reject request: %v", err)
+		}
+		if transactions.calls != 1 {
+			t.Fatalf("reject opened %d transactions, want 1", transactions.calls)
+		}
+
+		if _, err := fixture.service.Reject(t.Context(), "", item.ID, RejectInput{}); !errors.Is(err, ErrInvalidData) {
+			t.Fatalf("expected validation error, got %v", err)
+		}
+		if transactions.calls != 1 {
+			t.Fatalf("invalid rejection opened a transaction; calls=%d", transactions.calls)
+		}
+	})
+}
+
+type recordingTransactionManager struct {
+	calls int
+}
+
+func (m *recordingTransactionManager) WithinTransaction(ctx context.Context, callback func(context.Context) error) error {
+	m.calls++
+	return callback(ctx)
+}
+
 type requestFixture struct {
 	service             *Service
 	repository          *MemoryRepository
@@ -258,7 +323,7 @@ func newRequestFixture(t *testing.T, seats int) requestFixture {
 	assignmentService := assignments.NewService(assignmentRepository, licenseRepository, userRepository, devices.NewMemoryRepository())
 	notificationService := notifications.NewService(notifications.NewMemoryRepository())
 	requestRepository := NewMemoryRepository()
-	service := NewService(requestRepository, softwareRepository, licenseRepository, userRepository, assignmentService, notificationService)
+	service := NewService(requestRepository, softwareRepository, licenseRepository, userRepository, assignmentService, notificationService, database.DirectTransactor{})
 	fixedNow := time.Date(2026, time.August, 23, 10, 0, 0, 0, time.UTC)
 	service.now = func() time.Time { return fixedNow }
 

@@ -64,6 +64,9 @@ func main() {
 	var licenseRepository licenses.Repository
 	var deviceRepository devices.Repository
 	var assignmentRepository assignments.Repository
+	var notificationRepository notifications.Repository
+	var licenseRequestRepository licenserequests.Repository
+	var transactionManager database.Transactor
 	var ping httpapi.PingFunc
 	cleanup := func() {}
 
@@ -93,6 +96,9 @@ func main() {
 		licenseRepository = memoryLicenseRepository
 		deviceRepository = devices.NewMemoryRepository()
 		assignmentRepository = assignments.NewMemoryRepository(memoryLicenseRepository)
+		notificationRepository = notifications.NewMemoryRepository()
+		licenseRequestRepository = licenserequests.NewMemoryRepository()
+		transactionManager = database.DirectTransactor{}
 		ping = func(context.Context) error { return nil }
 		logger.Warn("using temporary in-memory storage; data will be lost on shutdown", "admin_email", cfg.DevAdminEmail)
 	case "postgres":
@@ -113,6 +119,9 @@ func main() {
 		licenseRepository = licenses.NewPostgresRepository(pool)
 		deviceRepository = devices.NewPostgresRepository(pool)
 		assignmentRepository = assignments.NewPostgresRepository(pool)
+		notificationRepository = notifications.NewPostgresRepository(pool)
+		licenseRequestRepository = licenserequests.NewPostgresRepository(pool)
+		transactionManager = database.NewPostgresTransactor(pool)
 		ping = pool.Ping
 		cleanup = pool.Close
 	}
@@ -138,21 +147,18 @@ func main() {
 	deviceHandler := devices.NewHTTPHandler(deviceService, authHandler, auditService)
 	assignmentService := assignments.NewService(assignmentRepository, licenseRepository, authRepository, deviceRepository)
 	assignmentHandler := assignments.NewHTTPHandler(assignmentService, authHandler, auditService)
-	var notificationHandler *notifications.HTTPHandler
-	var licenseRequestHandler *licenserequests.HTTPHandler
-	if cfg.StorageDriver == "memory" {
-		notificationService := notifications.NewService(notifications.NewMemoryRepository())
-		notificationHandler = notifications.NewHTTPHandler(notificationService, authHandler)
-		licenseRequestService := licenserequests.NewService(
-			licenserequests.NewMemoryRepository(),
-			softwareRepository,
-			licenseRepository,
-			authRepository,
-			assignmentService,
-			notificationService,
-		)
-		licenseRequestHandler = licenserequests.NewHTTPHandler(licenseRequestService, authHandler, auditService)
-	}
+	notificationService := notifications.NewService(notificationRepository)
+	notificationHandler := notifications.NewHTTPHandler(notificationService, authHandler)
+	licenseRequestService := licenserequests.NewService(
+		licenseRequestRepository,
+		softwareRepository,
+		licenseRepository,
+		authRepository,
+		assignmentService,
+		notificationService,
+		transactionManager,
+	)
+	licenseRequestHandler := licenserequests.NewHTTPHandler(licenseRequestService, authHandler, auditService)
 
 	if cfg.StorageDriver == "memory" && cfg.SeedDemoData {
 		seedResult, seedErr := developmentseed.Seed(context.Background(), developmentseed.Services{
