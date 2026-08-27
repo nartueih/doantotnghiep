@@ -27,6 +27,7 @@ import (
 	"license-manager/backend/internal/modules/users"
 	"license-manager/backend/internal/platform/database"
 	"license-manager/backend/internal/platform/securevalue"
+	"license-manager/backend/migrations"
 )
 
 const developmentAdminID = "00000000-0000-0000-0000-000000000001"
@@ -108,6 +109,11 @@ func main() {
 		pool, openErr := database.Open(startupCtx, cfg.DatabaseURL)
 		if openErr != nil {
 			logger.Error("cannot connect to database", "error", openErr)
+			os.Exit(1)
+		}
+		if migrationErr := migrations.RequireCurrent(startupCtx, pool); migrationErr != nil {
+			logger.Error("database migration required", "error", migrationErr)
+			pool.Close()
 			os.Exit(1)
 		}
 		postgresRepository := auth.NewPostgresRepository(pool)

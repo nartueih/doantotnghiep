@@ -81,3 +81,18 @@ func TestUpStatusAndRequireCurrent(t *testing.T) {
 		t.Fatalf("require current schema: %v", err)
 	}
 }
+
+func TestRequireVersionRejectsMissingAndStaleSchemas(t *testing.T) {
+	for _, current := range []int{0, 3} {
+		err := requireVersion(current)
+		if err == nil {
+			t.Fatalf("version %d unexpectedly accepted", current)
+		}
+		if !strings.Contains(err.Error(), "expected 4") || !strings.Contains(err.Error(), "cmd/migrate up") {
+			t.Fatalf("version %d returned unclear error: %v", current, err)
+		}
+	}
+	if err := requireVersion(LatestVersion); err != nil {
+		t.Fatalf("current schema rejected: %v", err)
+	}
+}

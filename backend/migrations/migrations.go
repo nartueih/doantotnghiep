@@ -180,14 +180,18 @@ func RequireCurrent(ctx context.Context, pool *pgxpool.Pool) error {
 			return fmt.Errorf("inspect migration state: %w", err)
 		}
 	}
-	if currentVersion != LatestVersion {
-		return fmt.Errorf(
-			"database schema is at version %d; expected %d; run go run ./cmd/migrate up",
-			currentVersion,
-			LatestVersion,
-		)
+	return requireVersion(currentVersion)
+}
+
+func requireVersion(currentVersion int) error {
+	if currentVersion == LatestVersion {
+		return nil
 	}
-	return nil
+	return fmt.Errorf(
+		"database schema is at version %d; expected %d; run go run ./cmd/migrate up",
+		currentVersion,
+		LatestVersion,
+	)
 }
 
 func ensureMigrationTable(ctx context.Context, executor interface {
