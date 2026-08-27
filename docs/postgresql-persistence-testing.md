@@ -44,4 +44,3 @@ Tất cả lệnh phải có exit code `0`.
 7. Xác nhận request vẫn `approved`, assignment vẫn tồn tại, notification vẫn hiển thị và key của license vẫn đọc được theo đúng quyền.
 
 Luồng từ chối cũng phải giữ request và notification sau restart nhưng không tạo assignment.
-

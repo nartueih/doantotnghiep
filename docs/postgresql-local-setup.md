@@ -128,4 +128,3 @@ pg_dump "$env:DATABASE_URL" -Fc -f license_manager.backup
 ```
 
 Không commit file `.backup`; file có thể chứa dữ liệu người dùng và license đã mã hóa.
-
