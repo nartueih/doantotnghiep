@@ -65,6 +65,10 @@ func (r *MemoryRepository) FindByID(_ context.Context, requestID string) (Reques
 	return cloneRequest(item), nil
 }
 
+func (r *MemoryRepository) FindForUpdate(ctx context.Context, requestID string) (Request, error) {
+	return r.FindByID(ctx, requestID)
+}
+
 func (r *MemoryRepository) Create(_ context.Context, item Request) (Request, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

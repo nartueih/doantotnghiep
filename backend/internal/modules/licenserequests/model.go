@@ -93,6 +93,7 @@ type Repository interface {
 	List(context.Context, Filter) ([]Request, error)
 	ListByRequester(context.Context, string) ([]Request, error)
 	FindByID(context.Context, string) (Request, error)
+	FindForUpdate(context.Context, string) (Request, error)
 	Create(context.Context, Request) (Request, error)
 	Cancel(context.Context, string, string, time.Time) (Request, error)
 	Approve(context.Context, ApprovalUpdate) (Request, error)
