@@ -9,7 +9,11 @@ import (
 const (
 	TypeLicenseRequestApproved = "license_request_approved"
 	TypeLicenseRequestRejected = "license_request_rejected"
+	TypeMaintenanceAccepted    = "maintenance_accepted"
+	TypeMaintenanceCompleted   = "maintenance_completed"
+	TypeMaintenanceRejected    = "maintenance_rejected"
 	EntityLicenseRequest       = "license_request"
+	EntityMaintenanceRequest   = "maintenance_request"
 )
 
 var (

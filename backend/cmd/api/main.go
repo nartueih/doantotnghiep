@@ -21,6 +21,7 @@ import (
 	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenserequests"
 	"license-manager/backend/internal/modules/licenses"
+	"license-manager/backend/internal/modules/maintenancerequests"
 	"license-manager/backend/internal/modules/notifications"
 	"license-manager/backend/internal/modules/selfservice"
 	"license-manager/backend/internal/modules/software"
@@ -67,6 +68,7 @@ func main() {
 	var assignmentRepository assignments.Repository
 	var notificationRepository notifications.Repository
 	var licenseRequestRepository licenserequests.Repository
+	var maintenanceRequestRepository maintenancerequests.Repository
 	var transactionManager database.Transactor
 	var ping httpapi.PingFunc
 	cleanup := func() {}
@@ -99,6 +101,7 @@ func main() {
 		assignmentRepository = assignments.NewMemoryRepository(memoryLicenseRepository)
 		notificationRepository = notifications.NewMemoryRepository()
 		licenseRequestRepository = licenserequests.NewMemoryRepository()
+		maintenanceRequestRepository = maintenancerequests.NewMemoryRepository()
 		transactionManager = database.DirectTransactor{}
 		ping = func(context.Context) error { return nil }
 		logger.Warn("using temporary in-memory storage; data will be lost on shutdown", "admin_email", cfg.DevAdminEmail)
@@ -127,6 +130,7 @@ func main() {
 		assignmentRepository = assignments.NewPostgresRepository(pool)
 		notificationRepository = notifications.NewPostgresRepository(pool)
 		licenseRequestRepository = licenserequests.NewPostgresRepository(pool)
+		maintenanceRequestRepository = maintenancerequests.NewPostgresRepository(pool)
 		transactionManager = database.NewPostgresTransactor(pool)
 		ping = pool.Ping
 		cleanup = pool.Close
@@ -165,6 +169,14 @@ func main() {
 		transactionManager,
 	)
 	licenseRequestHandler := licenserequests.NewHTTPHandler(licenseRequestService, authHandler, auditService)
+	maintenanceRequestService := maintenancerequests.NewService(
+		maintenanceRequestRepository,
+		deviceRepository,
+		authRepository,
+		notificationService,
+		transactionManager,
+	)
+	maintenanceRequestHandler := maintenancerequests.NewHTTPHandler(maintenanceRequestService, authHandler, auditService)
 
 	if cfg.StorageDriver == "memory" && cfg.SeedDemoData {
 		seedResult, seedErr := developmentseed.Seed(context.Background(), developmentseed.Services{
@@ -192,7 +204,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress,
-		Handler:           httpapi.NewRouter(ping, authHandler, auditHandler, dashboardHandler, selfServiceHandler, notificationHandler, licenseRequestHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
+		Handler:           httpapi.NewRouter(ping, authHandler, auditHandler, dashboardHandler, selfServiceHandler, notificationHandler, licenseRequestHandler, maintenanceRequestHandler, usersHandler, departmentHandler, softwareHandler, licenseHandler, deviceHandler, assignmentHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

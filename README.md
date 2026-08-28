@@ -10,6 +10,7 @@ Hệ thống quản lý thiết bị và giấy phép phần mềm trong doanh n
 - Theo dõi số lượng seat, ngày hết hạn và chi phí.
 - Cấp phát/thu hồi license cho người dùng hoặc thiết bị.
 - Nhân viên gửi yêu cầu cấp license; Admin/IT duyệt, từ chối và phản hồi ngay trong website.
+- Nhân viên báo sự cố thiết bị; Admin/IT tiếp nhận, hoàn thành hoặc từ chối yêu cầu bảo trì.
 - Thông báo website cho kết quả xử lý yêu cầu.
 - Cảnh báo license sắp hết hạn.
 - Ghi nhật ký các thao tác quan trọng.
@@ -63,7 +64,9 @@ Quyền xem activation key có kiểm soát cho Employee được kiểm tra the
 
 Luồng yêu cầu cấp license và thông báo website được kiểm tra theo [hướng dẫn License Request & Notification](docs/license-request-notification-testing.md). Yêu cầu, quyết định, cấp phát và thông báo được lưu bền vững trong PostgreSQL.
 
-Các API chính gồm `/api/v1/me/license-requests`, `/api/v1/me/notifications` dành cho Employee và `/api/v1/license-requests` dành cho Admin/IT Manager.
+Luồng báo sự cố thiết bị, xử lý bảo trì và thông báo website được kiểm tra theo [hướng dẫn Maintenance Request](docs/maintenance-request-testing.md).
+
+Các API chính gồm `/api/v1/me/license-requests`, `/api/v1/me/maintenance-requests`, `/api/v1/me/notifications` dành cho Employee; `/api/v1/license-requests` và `/api/v1/maintenance-requests` dành cho Admin/IT Manager.
 
 Hợp đồng API và cách sử dụng Swagger UI nằm trong [hướng dẫn OpenAPI](docs/openapi-testing.md).
 

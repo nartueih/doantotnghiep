@@ -12,6 +12,7 @@ import {
 } from '../../lib/self-service-api'
 import './EmployeePortalScreen.css'
 import { EmployeeLicenseRequests } from './EmployeeLicenseRequests'
+import { EmployeeMaintenanceRequests } from './EmployeeMaintenanceRequests'
 import { EmployeeNotificationBell } from './EmployeeNotificationBell'
 
 interface EmployeePortalScreenProps {
@@ -57,6 +58,8 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
   const [reloadKey, setReloadKey] = useState(0)
   const [keyDialog, setKeyDialog] = useState<EmployeeKeyDialog | null>(null)
   const [copied, setCopied] = useState(false)
+  const [openMaintenanceDeviceIDs, setOpenMaintenanceDeviceIDs] = useState<Set<string>>(new Set())
+  const [maintenanceDeviceRequestID, setMaintenanceDeviceRequestID] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -125,7 +128,7 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
   return <div className="employee-portal">
     <header className="employee-header">
       <a className="employee-brand" href="#/portal" aria-label="Trang chủ License Manager"><span>LM</span><div><strong>License Manager</strong><small>Cổng thông tin nhân viên</small></div></a>
-      <nav aria-label="Điều hướng cổng nhân viên"><a href="#my-devices">Thiết bị của tôi</a><a href="#my-licenses">License của tôi</a><a href="#my-license-requests">Yêu cầu license</a></nav>
+      <nav aria-label="Điều hướng cổng nhân viên"><a href="#my-devices">Thiết bị của tôi</a><a href="#my-licenses">License của tôi</a><a href="#my-license-requests">Yêu cầu license</a><a href="#my-maintenance-requests">Bảo trì</a></nav>
       <EmployeeNotificationBell accessToken={session.tokens.access_token} onSessionExpired={handleSessionExpired} />
       <div className="employee-account"><span className="employee-account-avatar"><Icon name="users" /></span><div><strong>{session.user.full_name}</strong><small>{session.user.employee_code}</small></div><button type="button" onClick={onLogout}>Đăng xuất</button></div>
     </header>
@@ -148,7 +151,7 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
         <div className="employee-content-grid">
           <section className="employee-panel employee-devices-panel" id="my-devices">
             <header><div><span><Icon name="device" /></span><div><h2>Thiết bị của tôi</h2><p>Tài sản công ty đang được bàn giao</p></div></div><button type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={isLoading} aria-label="Làm mới dữ liệu"><Icon name="refresh" /></button></header>
-            {isLoading ? <PortalLoading count={2} /> : devices.length ? <div className="employee-device-list">{devices.map((device) => <DeviceCard device={device} key={device.id} />)}</div> : <PortalEmpty icon="device" title="Bạn chưa được giao thiết bị" detail="Thiết bị được IT bàn giao sẽ xuất hiện tại đây." />}
+            {isLoading ? <PortalLoading count={2} /> : devices.length ? <div className="employee-device-list">{devices.map((device) => <DeviceCard device={device} hasOpenMaintenance={openMaintenanceDeviceIDs.has(device.id)} onRequestMaintenance={() => setMaintenanceDeviceRequestID(device.id)} key={device.id} />)}</div> : <PortalEmpty icon="device" title="Bạn chưa được giao thiết bị" detail="Thiết bị được IT bàn giao sẽ xuất hiện tại đây." />}
           </section>
 
           <section className="employee-panel employee-licenses-panel" id="my-licenses">
@@ -157,6 +160,7 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
           </section>
         </div>
         <EmployeeLicenseRequests accessToken={session.tokens.access_token} onSessionExpired={handleSessionExpired} />
+        <EmployeeMaintenanceRequests accessToken={session.tokens.access_token} devices={devices} initialDeviceID={maintenanceDeviceRequestID} onInitialDeviceHandled={() => setMaintenanceDeviceRequestID('')} onSessionExpired={handleSessionExpired} onOpenRequestsChange={setOpenMaintenanceDeviceIDs} />
       </>}
 
       <section className="employee-privacy"><Icon name="check" /><div><strong>Dữ liệu cá nhân được bảo vệ</strong><p>Portal chỉ hiển thị tài sản thuộc tài khoản đang đăng nhập. Key chỉ được giải mã khi IT cho phép và mọi lần xem đều được ghi Audit Log.</p></div></section>
@@ -170,12 +174,13 @@ export function EmployeePortalScreen({ session, onLogout }: EmployeePortalScreen
   </div>
 }
 
-function DeviceCard({ device }: { device: DeviceItem }) {
+function DeviceCard({ device, hasOpenMaintenance, onRequestMaintenance }: { device: DeviceItem; hasOpenMaintenance: boolean; onRequestMaintenance: () => void }) {
   return <article className="employee-device-card">
-    <div className="employee-device-top"><span className="employee-device-icon"><Icon name="device" /></span><span className={`employee-status status-${device.status}`}>{deviceStatusLabels[device.status] ?? device.status}</span></div>
+    <div className="employee-device-top"><span className="employee-device-icon"><Icon name="device" /></span><div className="employee-device-statuses">{hasOpenMaintenance && <span className="employee-status status-maintenance">Có yêu cầu bảo trì</span>}<span className={`employee-status status-${device.status}`}>{deviceStatusLabels[device.status] ?? device.status}</span></div></div>
     <div className="employee-device-name"><strong>{device.name}</strong><span>{device.asset_code}</span></div>
     <p>{[device.manufacturer, device.model].filter(Boolean).join(' · ') || deviceTypeLabels[device.device_type] || device.device_type}</p>
     <dl><div><dt>Loại thiết bị</dt><dd>{deviceTypeLabels[device.device_type] ?? device.device_type}</dd></div><div><dt>Serial number</dt><dd>{device.serial_number || 'Chưa cập nhật'}</dd></div><div><dt>Hạn bảo hành</dt><dd className={dateIsPast(device.warranty_expires_at) ? 'warning' : ''}>{formatDate(device.warranty_expires_at, 'Không xác định')}</dd></div></dl>
+    {!hasOpenMaintenance && <button className="employee-device-maintenance-action" type="button" onClick={onRequestMaintenance}><Icon name="settings" />Yêu cầu bảo trì</button>}
   </article>
 }
 

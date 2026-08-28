@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"license-manager/backend/internal/platform/database"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -40,7 +41,7 @@ func (r *PostgresRepository) List(ctx context.Context) ([]Device, error) {
 }
 
 func (r *PostgresRepository) FindByID(ctx context.Context, deviceID string) (Device, error) {
-	item, err := scanDevice(r.pool.QueryRow(ctx, deviceSelect+` WHERE d.id = $1`, deviceID))
+	item, err := scanDevice(database.Querier(ctx, r.pool).QueryRow(ctx, deviceSelect+` WHERE d.id = $1`, deviceID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Device{}, ErrNotFound
 	}

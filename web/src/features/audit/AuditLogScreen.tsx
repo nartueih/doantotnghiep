@@ -23,6 +23,12 @@ const actionLabels: Record<string, string> = {
   revoke: 'Thu hồi',
   view_key: 'Xem khóa',
   archive: 'Lưu trữ',
+  request: 'Gửi yêu cầu',
+  cancel: 'Hủy yêu cầu',
+  approve: 'Phê duyệt',
+  reject: 'Từ chối',
+  accept: 'Tiếp nhận',
+  complete: 'Hoàn thành',
 }
 
 const entityLabels: Record<string, string> = {
@@ -32,6 +38,8 @@ const entityLabels: Record<string, string> = {
   license: 'License',
   device: 'Thiết bị',
   license_assignment: 'Cấp phát license',
+  license_request: 'Yêu cầu license',
+  maintenance_request: 'Yêu cầu bảo trì',
 }
 
 const metadataLabels: Record<string, string> = {
@@ -53,6 +61,9 @@ const metadataLabels: Record<string, string> = {
   license_id: 'ID license',
   user_id: 'ID người dùng',
   device_id: 'ID thiết bị',
+  category: 'Nhóm sự cố',
+  priority: 'Mức ưu tiên',
+  assigned_to: 'ID người phụ trách',
 }
 
 export function AuditLogScreen({ session, onNavigate, onLogout }: AuditLogScreenProps) {

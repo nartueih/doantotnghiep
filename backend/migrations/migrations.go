@@ -26,7 +26,7 @@ type MigrationStatus struct {
 	AppliedAt *time.Time
 }
 
-const LatestVersion = 4
+const LatestVersion = 5
 
 //go:embed *.sql
 var files embed.FS

@@ -3,7 +3,8 @@ import type { SoftwareProduct } from './software-api'
 export type LicenseRequestPriority = 'normal' | 'high' | 'urgent'
 export type LicenseRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled'
 export type LicenseRequestDecisionReason = 'out_of_stock' | 'not_approved' | 'other'
-export type NotificationType = 'license_request_approved' | 'license_request_rejected'
+export type NotificationType = 'license_request_approved' | 'license_request_rejected' |
+  'maintenance_accepted' | 'maintenance_completed' | 'maintenance_rejected'
 
 export interface LicenseRequestItem {
   id: string
@@ -49,7 +50,7 @@ export interface WebsiteNotification {
   type: NotificationType
   title: string
   message: string
-  entity_type: 'license_request'
+  entity_type: 'license_request' | 'maintenance_request'
   entity_id: string
   created_at: string
   read_at?: string

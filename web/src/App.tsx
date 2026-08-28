@@ -8,6 +8,7 @@ import { DepartmentManagementScreen } from './features/departments/DepartmentMan
 import { DeviceManagementScreen } from './features/devices/DeviceManagementScreen'
 import { EmployeePortalScreen } from './features/employee/EmployeePortalScreen'
 import { LicenseManagementScreen } from './features/licenses/LicenseManagementScreen'
+import { MaintenanceManagementScreen } from './features/maintenance/MaintenanceManagementScreen'
 import { LicenseRequestManagementScreen } from './features/requests/LicenseRequestManagementScreen'
 import { SoftwareManagementScreen } from './features/software/SoftwareManagementScreen'
 import { UserManagementScreen } from './features/users/UserManagementScreen'
@@ -25,6 +26,7 @@ function pageFromHash(): AdminPage {
   if (window.location.hash === '#/software') return 'software'
   if (window.location.hash === '#/assignments') return 'assignments'
   if (window.location.hash === '#/requests') return 'requests'
+  if (window.location.hash === '#/maintenance') return 'maintenance'
   if (window.location.hash === '#/devices') return 'devices'
   if (window.location.hash === '#/users') return 'users'
   if (window.location.hash === '#/departments') return 'departments'
@@ -94,6 +96,9 @@ function App() {
     }
     if (adminPage === 'requests') {
       return <LicenseRequestManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
+    }
+    if (adminPage === 'maintenance') {
+      return <MaintenanceManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />
     }
     if (adminPage === 'devices') {
       return <DeviceManagementScreen session={session} onNavigate={handleNavigate} onLogout={handleLogout} />

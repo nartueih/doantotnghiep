@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthSession, UserRole } from '../../lib/auth-api'
 import './AdminShell.css'
 
-export type AdminPage = 'dashboard' | 'software' | 'licenses' | 'assignments' | 'requests' | 'devices' | 'users' | 'departments' | 'audit'
+export type AdminPage = 'dashboard' | 'software' | 'licenses' | 'assignments' | 'requests' | 'maintenance' | 'devices' | 'users' | 'departments' | 'audit'
 export type IconName = 'grid' | 'software' | 'key' | 'assignment' | 'request' | 'device' | 'users' |
   'department' | 'audit' | 'bell' | 'refresh' | 'search' | 'chevron' | 'trend' |
   'calendar' | 'alert' | 'check' | 'menu' | 'plus' | 'filter' | 'eye' | 'edit' | 'archive' | 'undo' | 'settings' | 'close'
@@ -29,6 +29,7 @@ const navigation: Array<{ label: string; icon: IconName; page?: AdminPage }> = [
   { label: 'License', icon: 'key', page: 'licenses' },
   { label: 'Cấp phát', icon: 'assignment', page: 'assignments' },
   { label: 'Yêu cầu', icon: 'request', page: 'requests' },
+  { label: 'Bảo trì', icon: 'settings', page: 'maintenance' },
   { label: 'Thiết bị', icon: 'device', page: 'devices' },
   { label: 'Người dùng', icon: 'users', page: 'users' },
   { label: 'Phòng ban', icon: 'department', page: 'departments' },
@@ -60,11 +61,11 @@ export function AdminShell({ session, activePage, title, onNavigate, onLogout, a
 
         <nav aria-label="Điều hướng chính">
           <span className="admin-nav-label">Quản lý</span>
-          {navigation.slice(0, 6).map((item) => (
+          {navigation.slice(0, 7).map((item) => (
             <NavItem key={item.label} item={item} activePage={activePage} onNavigate={navigate} />
           ))}
           <span className="admin-nav-label second">Hệ thống</span>
-          {navigation.slice(6).map((item) => (
+          {navigation.slice(7).map((item) => (
             <NavItem key={item.label} item={item} activePage={activePage} onNavigate={navigate} />
           ))}
         </nav>

@@ -45,6 +45,7 @@ func OpenPostgres(t testing.TB) *pgxpool.Pool {
 	}
 	if _, err := pool.Exec(ctx, `
 		TRUNCATE TABLE
+			maintenance_requests,
 			notifications,
 			license_requests,
 			audit_logs,
