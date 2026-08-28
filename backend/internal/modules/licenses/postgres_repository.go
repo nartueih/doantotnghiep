@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"license-manager/backend/internal/platform/database"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -52,7 +53,7 @@ func (r *PostgresRepository) List(ctx context.Context) ([]License, error) {
 }
 
 func (r *PostgresRepository) FindByID(ctx context.Context, licenseID string) (License, error) {
-	item, err := scanLicense(r.pool.QueryRow(ctx, `
+	item, err := scanLicense(database.Querier(ctx, r.pool).QueryRow(ctx, `
 		SELECT l.id::text, l.software_product_id::text, l.name, l.license_type,
 		       l.assignment_type, l.seat_count, COUNT(a.id)::int,
 		       l.encrypted_key, COALESCE(l.key_hint, ''), l.allow_employee_key_view,

@@ -1,0 +1,9 @@
+.software-category-badge { width: 36px; height: 36px; display: inline-grid; flex: 0 0 auto; place-items: center; overflow: hidden; border: 1px solid currentColor; border-radius: 9px; }
+.software-category-badge.category-size-compact { width: 32px; height: 32px; border-radius: 8px; }.software-category-badge.category-size-large { width: 40px; height: 40px; border-radius: 10px; }
+.software-category-badge svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }.software-category-badge.category-size-compact svg { width: 17px; height: 17px; }.software-category-badge.category-size-large svg { width: 21px; height: 21px; }
+.software-category-badge.category-office { color: #1769d2; background: #eaf2ff; border-color: #cfe0fb; }
+.software-category-badge.category-design { color: #7047c8; background: #f1edff; border-color: #dfd5fb; }
+.software-category-badge.category-development { color: #087861; background: #e7f7f2; border-color: #c8eadf; }
+.software-category-badge.category-collaboration { color: #b75b0b; background: #fff2df; border-color: #f7dcba; }
+.software-category-badge.category-operating-system { color: #46627f; background: #edf3f8; border-color: #d5e0e9; }
+.software-category-badge.category-general { color: #536477; background: #f0f3f7; border-color: #dae1e8; }

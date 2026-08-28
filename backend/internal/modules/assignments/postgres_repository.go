@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"license-manager/backend/internal/platform/database"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -12,11 +13,15 @@ import (
 )
 
 type PostgresRepository struct {
-	pool *pgxpool.Pool
+	pool         *pgxpool.Pool
+	transactions *database.PostgresTransactor
 }
 
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
-	return &PostgresRepository{pool: pool}
+	return &PostgresRepository{
+		pool:         pool,
+		transactions: database.NewPostgresTransactor(pool),
+	}
 }
 
 func (r *PostgresRepository) List(ctx context.Context) ([]Assignment, error) {
@@ -41,56 +46,59 @@ func (r *PostgresRepository) List(ctx context.Context) ([]Assignment, error) {
 }
 
 func (r *PostgresRepository) Create(ctx context.Context, item Assignment) (Assignment, error) {
-	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return Assignment{}, fmt.Errorf("begin assignment: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	var created Assignment
+	err := r.transactions.WithinTransaction(ctx, func(transactionContext context.Context) error {
+		query := database.Querier(transactionContext, r.pool)
 
-	var seatCount int
-	var archivedAt *time.Time
-	if err := tx.QueryRow(ctx, `SELECT seat_count, archived_at FROM licenses WHERE id = $1 FOR UPDATE`, item.LicenseID).Scan(&seatCount, &archivedAt); errors.Is(err, pgx.ErrNoRows) {
-		return Assignment{}, ErrLicenseNotFound
-	} else if err != nil {
-		return Assignment{}, fmt.Errorf("lock license: %w", err)
-	}
-	if archivedAt != nil {
-		return Assignment{}, ErrLicenseInactive
-	}
-	var usedSeats int
-	if err := tx.QueryRow(ctx, `
-		SELECT COUNT(*)::int FROM license_assignments
-		WHERE license_id = $1 AND status = 'active'`, item.LicenseID).Scan(&usedSeats); err != nil {
-		return Assignment{}, fmt.Errorf("count license assignments: %w", err)
-	}
-	if usedSeats >= seatCount {
-		return Assignment{}, ErrNoAvailableSeats
-	}
-
-	_, err = tx.Exec(ctx, `
-		INSERT INTO license_assignments (
-			id, license_id, user_id, device_id, assigned_by, assigned_at, status, notes
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, 'active', NULLIF($7, ''))`,
-		item.ID,
-		item.LicenseID,
-		nullString(item.UserID),
-		nullString(item.DeviceID),
-		item.AssignedBy,
-		item.AssignedAt,
-		item.Notes,
-	)
-	if err != nil {
-		var postgresError *pgconn.PgError
-		if errors.As(err, &postgresError) && postgresError.Code == "23505" {
-			return Assignment{}, ErrDuplicate
+		var seatCount int
+		var archivedAt *time.Time
+		if err := query.QueryRow(transactionContext, `SELECT seat_count, archived_at FROM licenses WHERE id = $1 FOR UPDATE`, item.LicenseID).Scan(&seatCount, &archivedAt); errors.Is(err, pgx.ErrNoRows) {
+			return ErrLicenseNotFound
+		} else if err != nil {
+			return fmt.Errorf("lock license: %w", err)
 		}
-		return Assignment{}, fmt.Errorf("create license assignment: %w", err)
+		if archivedAt != nil {
+			return ErrLicenseInactive
+		}
+
+		var usedSeats int
+		if err := query.QueryRow(transactionContext, `
+			SELECT COUNT(*)::int FROM license_assignments
+			WHERE license_id = $1 AND status = 'active'`, item.LicenseID).Scan(&usedSeats); err != nil {
+			return fmt.Errorf("count license assignments: %w", err)
+		}
+		if usedSeats >= seatCount {
+			return ErrNoAvailableSeats
+		}
+
+		_, err := query.Exec(transactionContext, `
+			INSERT INTO license_assignments (
+				id, license_id, user_id, device_id, assigned_by, assigned_at, status, notes
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, 'active', NULLIF($7, ''))`,
+			item.ID,
+			item.LicenseID,
+			nullString(item.UserID),
+			nullString(item.DeviceID),
+			item.AssignedBy,
+			item.AssignedAt,
+			item.Notes,
+		)
+		if err != nil {
+			var postgresError *pgconn.PgError
+			if errors.As(err, &postgresError) && postgresError.Code == "23505" {
+				return ErrDuplicate
+			}
+			return fmt.Errorf("create license assignment: %w", err)
+		}
+
+		created, err = r.findByID(transactionContext, item.ID)
+		return err
+	})
+	if err != nil {
+		return Assignment{}, err
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return Assignment{}, fmt.Errorf("commit assignment: %w", err)
-	}
-	return r.findByID(ctx, item.ID)
+	return created, nil
 }
 
 func (r *PostgresRepository) Revoke(ctx context.Context, assignmentID, actorID, _ string, revokedAt time.Time) (Assignment, error) {
@@ -108,7 +116,7 @@ func (r *PostgresRepository) Revoke(ctx context.Context, assignmentID, actorID, 
 }
 
 func (r *PostgresRepository) findByID(ctx context.Context, assignmentID string) (Assignment, error) {
-	item, err := scanAssignment(r.pool.QueryRow(ctx, assignmentSelect+` WHERE a.id = $1`, assignmentID))
+	item, err := scanAssignment(database.Querier(ctx, r.pool).QueryRow(ctx, assignmentSelect+` WHERE a.id = $1`, assignmentID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Assignment{}, ErrNotFound
 	}

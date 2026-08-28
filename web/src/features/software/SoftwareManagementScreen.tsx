@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { AdminShell, Icon, type AdminPage } from '../../components/layout/AdminShell'
+import { SoftwareCategoryBadge } from '../../components/software/SoftwareCategoryBadge'
 import type { AuthSession } from '../../lib/auth-api'
 import { getLicenses, LicenseAPIError, type LicenseItem } from '../../lib/license-api'
 import {
@@ -135,7 +136,7 @@ export function SoftwareManagementScreen({ session, onNavigate, onLogout }: Soft
           ) : (
             <div className="software-table-scroll"><table className="software-table">
               <thead><tr><th>Phần mềm</th><th>Nhà phát hành</th><th>Phiên bản</th><th>License liên kết</th><th>Mức sử dụng seat</th><th>Cập nhật</th><th /></tr></thead>
-              <tbody>{filteredProducts.map((product, index) => <SoftwareRow product={product} licenses={licensesByProduct.get(product.id) ?? []} colorIndex={index} canManage={canManage} onEdit={setFormProduct} key={product.id} />)}</tbody>
+              <tbody>{filteredProducts.map((product) => <SoftwareRow product={product} licenses={licensesByProduct.get(product.id) ?? []} canManage={canManage} onEdit={setFormProduct} key={product.id} />)}</tbody>
             </table></div>
           )}
         </section>
@@ -146,12 +147,12 @@ export function SoftwareManagementScreen({ session, onNavigate, onLogout }: Soft
   )
 }
 
-function SoftwareRow({ product, licenses, colorIndex, canManage, onEdit }: { product: SoftwareProduct; licenses: LicenseItem[]; colorIndex: number; canManage: boolean; onEdit: (product: SoftwareProduct) => void }) {
+function SoftwareRow({ product, licenses, canManage, onEdit }: { product: SoftwareProduct; licenses: LicenseItem[]; canManage: boolean; onEdit: (product: SoftwareProduct) => void }) {
   const seats = licenses.reduce((sum, license) => sum + license.seat_count, 0)
   const usedSeats = licenses.reduce((sum, license) => sum + license.used_seats, 0)
   const usagePercent = seats > 0 ? Math.round((usedSeats / seats) * 100) : 0
   return <tr>
-    <td><div className="software-identity"><span className={`tone-${colorIndex % 5}`}>{productInitials(product.name)}</span><div><strong>{product.name}</strong><small>{product.description || 'Chưa có mô tả'}</small></div></div></td>
+    <td><div className="software-identity"><SoftwareCategoryBadge name={product.name} publisher={product.publisher} /><div><strong>{product.name}</strong><small>{product.description || 'Chưa có mô tả'}</small></div></div></td>
     <td><strong className="software-publisher">{product.publisher}</strong></td>
     <td><span className={product.version ? 'software-version' : 'software-version muted'}>{product.version || 'Chưa xác định'}</span></td>
     <td>{licenses.length ? <div className="software-licenses"><strong>{licenses.length} license</strong><small>{licenses.slice(0, 2).map((license) => license.name).join(', ')}{licenses.length > 2 ? '…' : ''}</small></div> : <span className="software-no-license">Chưa có license</span>}</td>
@@ -203,10 +204,6 @@ function SoftwareError({ error, onRetry, onLogout }: { error: PageError; onRetry
   const expired = error.status === 401
   const forbidden = error.status === 403
   return <div className="software-error"><Icon name="alert" /><strong>{expired ? 'Phiên đăng nhập đã hết hạn' : forbidden ? 'Bạn không có quyền xem phần mềm' : 'Không thể tải danh mục phần mềm'}</strong><p>{expired ? 'Đăng nhập lại để tiếp tục.' : forbidden ? 'Chỉ Admin và Quản lý IT được truy cập module này.' : translateSoftwareError(error.message)}</p><button type="button" onClick={expired ? onLogout : onRetry}>{expired ? 'Đăng nhập lại' : 'Thử lại'}</button></div>
-}
-
-function productInitials(name: string) {
-  return name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'SW'
 }
 
 function formatDate(value: string) {

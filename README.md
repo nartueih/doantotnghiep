@@ -9,15 +9,17 @@ Hệ thống quản lý thiết bị và giấy phép phần mềm trong doanh n
 - Quản lý danh mục phần mềm và license.
 - Theo dõi số lượng seat, ngày hết hạn và chi phí.
 - Cấp phát/thu hồi license cho người dùng hoặc thiết bị.
+- Nhân viên gửi yêu cầu cấp license; Admin/IT duyệt, từ chối và phản hồi ngay trong website.
+- Thông báo website cho kết quả xử lý yêu cầu.
 - Cảnh báo license sắp hết hạn.
 - Ghi nhật ký các thao tác quan trọng.
 
 ## Công nghệ dự kiến
 
 - Backend: Go, Gin, PostgreSQL.
-- Web: React + TypeScript (giai đoạn sau).
+- Web: React + TypeScript.
 - Android: Kotlin + Jetpack Compose (giai đoạn sau).
-- Hạ tầng phát triển: Docker Compose.
+- Hạ tầng phát triển: PostgreSQL cài trực tiếp; Docker Compose là tùy chọn.
 
 ## Chạy backend ở môi trường phát triển
 
@@ -59,18 +61,23 @@ Giao diện cổng thông tin riêng cho nhân viên được kiểm tra theo [h
 
 Quyền xem activation key có kiểm soát cho Employee được kiểm tra theo [hướng dẫn Employee License Key Access](docs/employee-license-key-testing.md).
 
+Luồng yêu cầu cấp license và thông báo website được kiểm tra theo [hướng dẫn License Request & Notification](docs/license-request-notification-testing.md). Yêu cầu, quyết định, cấp phát và thông báo được lưu bền vững trong PostgreSQL.
+
+Các API chính gồm `/api/v1/me/license-requests`, `/api/v1/me/notifications` dành cho Employee và `/api/v1/license-requests` dành cho Admin/IT Manager.
+
 Hợp đồng API và cách sử dụng Swagger UI nằm trong [hướng dẫn OpenAPI](docs/openapi-testing.md).
 
-Yêu cầu cơ bản: Go 1.25+. Docker Desktop chỉ cần khi chuyển sang PostgreSQL.
+Yêu cầu cơ bản: Go 1.25+, Node.js và PostgreSQL. Xem [hướng dẫn PostgreSQL local](docs/postgresql-local-setup.md) trước khi chạy backend bằng database thật.
 
 ```powershell
-docker compose up -d postgres
 Set-Location backend
 $env:APP_ENV = "development"
 $env:HTTP_ADDRESS = ":8080"
-$env:DATABASE_URL = "postgres://license_admin:license_admin@localhost:5432/license_manager?sslmode=disable"
+$env:STORAGE_DRIVER = "postgres"
+$env:DATABASE_URL = "postgres://license_admin:replace-with-local-password@localhost:5432/license_manager?sslmode=disable"
 $env:SHUTDOWN_TIMEOUT = "10s"
-go mod download
+go run ./cmd/migrate up
+go run ./cmd/seed
 go run ./cmd/api
 ```
 

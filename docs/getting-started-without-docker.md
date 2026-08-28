@@ -1,6 +1,6 @@
-# Chạy và kiểm tra Authentication khi chưa có database
+# Chạy tạm bằng memory khi chưa có database
 
-Hướng dẫn này dùng `STORAGE_DRIVER=memory`. Backend tạo một tài khoản Admin tạm trong RAM, vì vậy chưa cần Docker hoặc PostgreSQL. Dữ liệu sẽ mất mỗi khi tắt ứng dụng.
+Hướng dẫn này dùng `STORAGE_DRIVER=memory`. Backend tạo một tài khoản Admin tạm trong RAM, vì vậy chưa cần Docker hoặc PostgreSQL. Dữ liệu sẽ mất mỗi khi tắt ứng dụng. Chế độ này chỉ phù hợp để kiểm tra nhanh, không dùng cho tích hợp Web/Android hoặc dữ liệu đồ án chính thức.
 
 ## Bước 1: kiểm tra Go
 
@@ -177,14 +177,6 @@ Kết quả đúng là HTTP `204 No Content`. Sau đó refresh token này không
 
 Quay lại cửa sổ đang chạy server và nhấn `Ctrl+C`. Server sẽ thực hiện graceful shutdown. Vì đang dùng memory storage, tài khoản và các phiên đăng nhập tạm sẽ được tạo lại từ đầu ở lần chạy tiếp theo.
 
-## Khi nào mới cần tạo database?
+## Chuyển sang database thật
 
-Sau khi hoàn thành và hiểu toàn bộ luồng trên, bước tiếp theo mới là:
-
-1. Cài PostgreSQL trực tiếp hoặc sửa Docker Desktop.
-2. Tạo database `license_manager` và user `license_admin`.
-3. Chạy lần lượt `001_initial_schema.sql`, `002_license_archiving.sql`, sau đó `003_employee_license_key_access.sql`.
-4. Chuyển `STORAGE_DRIVER` từ `memory` sang `postgres`.
-5. Tạo tài khoản Admin thật trong bảng `users`.
-
-Không cần thực hiện các bước database ở thời điểm hiện tại.
+Khi bắt đầu tích hợp Web hoặc Android, chuyển sang [hướng dẫn PostgreSQL local](postgresql-local-setup.md). Không execute migration thủ công; dùng `go run ./cmd/migrate up`, sau đó tạo Admin idempotent bằng `go run ./cmd/seed`.

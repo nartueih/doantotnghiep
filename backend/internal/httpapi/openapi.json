@@ -19,7 +19,9 @@
     { "name": "Assignments" },
     { "name": "Audit" },
     { "name": "Dashboard" },
-    { "name": "Self-service" }
+    { "name": "Self-service" },
+    { "name": "License requests" },
+    { "name": "Notifications" }
   ],
   "security": [{ "bearerAuth": [] }],
   "paths": {
@@ -400,6 +402,106 @@
         "parameters": [{ "name": "assignment_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
         "responses": { "200": { "description": "Plaintext key được cấp có kiểm soát", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EmployeeLicenseKeyResponse" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
       }
+    },
+    "/api/v1/me/requestable-software": {
+      "get": {
+        "tags": ["License requests"],
+        "operationId": "getRequestableSoftware",
+        "summary": "Danh mục phần mềm Employee có thể yêu cầu",
+        "x-required-roles": ["employee"],
+        "responses": { "200": { "description": "Danh mục phần mềm", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SoftwareList" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
+    },
+    "/api/v1/me/license-requests": {
+      "get": {
+        "tags": ["License requests"],
+        "operationId": "getMyLicenseRequests",
+        "summary": "Lịch sử yêu cầu license của Employee hiện tại",
+        "x-required-roles": ["employee"],
+        "responses": { "200": { "description": "Yêu cầu của tôi", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequestList" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      },
+      "post": {
+        "tags": ["License requests"],
+        "operationId": "createMyLicenseRequest",
+        "summary": "Tạo yêu cầu cấp license cho bản thân",
+        "x-required-roles": ["employee"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequestCreate" } } } },
+        "responses": { "201": { "description": "Yêu cầu đã tạo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequest" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/me/license-requests/{id}/cancel": {
+      "patch": {
+        "tags": ["License requests"],
+        "operationId": "cancelMyLicenseRequest",
+        "summary": "Hủy yêu cầu pending của bản thân",
+        "x-required-roles": ["employee"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "responses": { "200": { "description": "Yêu cầu đã hủy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequest" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/license-requests": {
+      "get": {
+        "tags": ["License requests"],
+        "operationId": "listLicenseRequests",
+        "summary": "Danh sách yêu cầu cho Admin và IT Manager",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "approved", "rejected", "cancelled"] } },
+          { "name": "priority", "in": "query", "schema": { "type": "string", "enum": ["normal", "high", "urgent"] } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Danh sách yêu cầu", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequestList" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
+    },
+    "/api/v1/license-requests/{id}/approve": {
+      "patch": {
+        "tags": ["License requests"],
+        "operationId": "approveLicenseRequest",
+        "summary": "Duyệt yêu cầu và tự động cấp license",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequestApprove" } } } },
+        "responses": { "200": { "description": "Yêu cầu đã duyệt", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequest" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/UnprocessableEntity" } }
+      }
+    },
+    "/api/v1/license-requests/{id}/reject": {
+      "patch": {
+        "tags": ["License requests"],
+        "operationId": "rejectLicenseRequest",
+        "summary": "Từ chối yêu cầu và gửi phản hồi",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequestReject" } } } },
+        "responses": { "200": { "description": "Yêu cầu đã từ chối", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequest" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/me/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "operationId": "getMyNotifications",
+        "summary": "Thông báo website của Employee hiện tại",
+        "x-required-roles": ["employee"],
+        "responses": { "200": { "description": "Danh sách thông báo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NotificationList" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
+    },
+    "/api/v1/me/notifications/{id}/read": {
+      "patch": {
+        "tags": ["Notifications"],
+        "operationId": "markMyNotificationRead",
+        "summary": "Đánh dấu một thông báo đã đọc",
+        "x-required-roles": ["employee"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "responses": { "200": { "description": "Thông báo đã đọc", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Notification" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/api/v1/me/notifications/read-all": {
+      "patch": {
+        "tags": ["Notifications"],
+        "operationId": "markAllMyNotificationsRead",
+        "summary": "Đánh dấu tất cả thông báo đã đọc",
+        "x-required-roles": ["employee"],
+        "responses": { "200": { "description": "Số thông báo đã cập nhật", "content": { "application/json": { "schema": { "type": "object", "required": ["updated"], "properties": { "updated": { "type": "integer", "minimum": 0 } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
     }
   },
   "components": {
@@ -419,7 +521,7 @@
       "ServiceUnavailable": { "description": "Storage chưa sẵn sàng", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthStatus" } } } }
     },
     "schemas": {
-      "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "string" } } },
+      "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "string" }, "code": { "type": "string", "description": "Mã lỗi nghiệp vụ ổn định khi endpoint cung cấp" } } },
       "HealthStatus": { "type": "object", "required": ["status"], "properties": { "status": { "type": "string", "example": "ok" } } },
       "APIInfo": { "type": "object", "properties": { "name": { "type": "string" }, "version": { "type": "string" } } },
       "LoginRequest": { "type": "object", "required": ["email", "password"], "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string", "format": "password" } } },
@@ -589,6 +691,34 @@
           "expires_at": { "type": "string", "format": "date" }, "lifecycle_status": { "type": "string", "enum": ["upcoming", "active", "expired", "archived"] }, "notes": { "type": "string" }, "can_view_key": { "type": "boolean", "readOnly": true }
         }
       },
+      "LicenseRequest": {
+        "type": "object",
+        "required": ["id", "requester_id", "requester_name", "software_product_id", "software_product_name", "priority", "reason", "status", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" }, "requester_id": { "type": "string", "format": "uuid" }, "requester_name": { "type": "string" },
+          "software_product_id": { "type": "string", "format": "uuid" }, "software_product_name": { "type": "string" },
+          "priority": { "type": "string", "enum": ["normal", "high", "urgent"] }, "reason": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "approved", "rejected", "cancelled"] },
+          "selected_license_id": { "type": "string", "format": "uuid" }, "selected_license_name": { "type": "string" }, "assignment_id": { "type": "string", "format": "uuid" },
+          "reviewed_by": { "type": "string", "format": "uuid" }, "reviewed_by_name": { "type": "string" },
+          "decision_reason": { "type": "string", "enum": ["out_of_stock", "not_approved", "other"] }, "response_note": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" },
+          "reviewed_at": { "type": "string", "format": "date-time" }, "cancelled_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LicenseRequestCreate": { "type": "object", "required": ["software_product_id", "priority", "reason"], "properties": { "software_product_id": { "type": "string", "format": "uuid" }, "priority": { "type": "string", "enum": ["normal", "high", "urgent"] }, "reason": { "type": "string" } } },
+      "LicenseRequestApprove": { "type": "object", "required": ["license_id"], "properties": { "license_id": { "type": "string", "format": "uuid" }, "response_note": { "type": "string" } } },
+      "LicenseRequestReject": { "type": "object", "required": ["decision_reason", "response_note"], "properties": { "decision_reason": { "type": "string", "enum": ["out_of_stock", "not_approved", "other"] }, "response_note": { "type": "string" } } },
+      "Notification": {
+        "type": "object",
+        "required": ["id", "user_id", "type", "title", "message", "entity_type", "entity_id", "created_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" }, "user_id": { "type": "string", "format": "uuid" },
+          "type": { "type": "string", "enum": ["license_request_approved", "license_request_rejected"] },
+          "title": { "type": "string" }, "message": { "type": "string" }, "entity_type": { "type": "string", "enum": ["license_request"] }, "entity_id": { "type": "string", "format": "uuid" },
+          "created_at": { "type": "string", "format": "date-time" }, "read_at": { "type": "string", "format": "date-time" }
+        }
+      },
       "UserList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/User" } } } }] },
       "DepartmentList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Department" } } } }] },
       "SoftwareList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/SoftwareProduct" } } } }] },
@@ -597,6 +727,8 @@
       "AssignmentList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Assignment" } } } }] },
       "AuditLogList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/AuditLog" } } } }] },
       "AssignedLicenseList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/AssignedLicense" } } } }] },
+      "LicenseRequestList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/LicenseRequest" } } } }] },
+      "NotificationList": { "type": "object", "required": ["items", "total", "unread_count"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Notification" } }, "total": { "type": "integer", "minimum": 0 }, "unread_count": { "type": "integer", "minimum": 0 } } },
       "LicenseAlertList": {
         "type": "object",
         "required": ["items", "total", "expiry_window_days"],
