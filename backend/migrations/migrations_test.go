@@ -10,8 +10,8 @@ import (
 
 func TestAllReturnsOrderedUniqueMigrations(t *testing.T) {
 	items := All()
-	if len(items) != 4 {
-		t.Fatalf("expected 4 migrations, got %d", len(items))
+	if len(items) != 5 {
+		t.Fatalf("expected 5 migrations, got %d", len(items))
 	}
 
 	seen := make(map[int]bool, len(items))
@@ -88,7 +88,7 @@ func TestRequireVersionRejectsMissingAndStaleSchemas(t *testing.T) {
 		if err == nil {
 			t.Fatalf("version %d unexpectedly accepted", current)
 		}
-		if !strings.Contains(err.Error(), "expected 4") || !strings.Contains(err.Error(), "cmd/migrate up") {
+		if !strings.Contains(err.Error(), "expected 5") || !strings.Contains(err.Error(), "cmd/migrate up") {
 			t.Fatalf("version %d returned unclear error: %v", current, err)
 		}
 	}

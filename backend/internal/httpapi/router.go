@@ -14,6 +14,7 @@ import (
 	"license-manager/backend/internal/modules/devices"
 	"license-manager/backend/internal/modules/licenserequests"
 	"license-manager/backend/internal/modules/licenses"
+	"license-manager/backend/internal/modules/maintenancerequests"
 	"license-manager/backend/internal/modules/notifications"
 	"license-manager/backend/internal/modules/selfservice"
 	"license-manager/backend/internal/modules/software"
@@ -30,6 +31,7 @@ func NewRouter(
 	selfServiceHandler *selfservice.HTTPHandler,
 	notificationHandler *notifications.HTTPHandler,
 	licenseRequestHandler *licenserequests.HTTPHandler,
+	maintenanceRequestHandler *maintenancerequests.HTTPHandler,
 	usersHandler *users.HTTPHandler,
 	departmentHandler *departments.HTTPHandler,
 	softwareHandler *software.HTTPHandler,
@@ -80,6 +82,9 @@ func NewRouter(
 	}
 	if licenseRequestHandler != nil {
 		licenseRequestHandler.RegisterRoutes(v1)
+	}
+	if maintenanceRequestHandler != nil {
+		maintenanceRequestHandler.RegisterRoutes(v1)
 	}
 	if usersHandler != nil {
 		usersHandler.RegisterRoutes(v1)

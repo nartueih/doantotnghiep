@@ -21,6 +21,7 @@
     { "name": "Dashboard" },
     { "name": "Self-service" },
     { "name": "License requests" },
+    { "name": "Maintenance requests" },
     { "name": "Notifications" }
   ],
   "security": [{ "bearerAuth": [] }],
@@ -348,7 +349,7 @@
         "summary": "Tra cứu Audit Log",
         "x-required-roles": ["admin", "it_manager"],
         "parameters": [
-          { "name": "action", "in": "query", "schema": { "type": "string", "enum": ["create", "update", "status_change", "assign", "revoke", "view_key", "archive"] } },
+          { "name": "action", "in": "query", "schema": { "type": "string", "enum": ["create", "update", "status_change", "assign", "revoke", "view_key", "archive", "request", "cancel", "approve", "reject", "accept", "complete"] } },
           { "name": "entity_type", "in": "query", "schema": { "type": "string" } },
           { "name": "actor_id", "in": "query", "schema": { "type": "string", "format": "uuid" } },
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 200 } }
@@ -473,6 +474,80 @@
         "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequestReject" } } } },
         "responses": { "200": { "description": "Yêu cầu đã từ chối", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LicenseRequest" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/me/maintenance-requests": {
+      "get": {
+        "tags": ["Maintenance requests"],
+        "operationId": "getMyMaintenanceRequests",
+        "summary": "Lịch sử yêu cầu bảo trì của Employee hiện tại",
+        "x-required-roles": ["employee"],
+        "responses": { "200": { "description": "Yêu cầu bảo trì của tôi", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceRequestList" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      },
+      "post": {
+        "tags": ["Maintenance requests"],
+        "operationId": "createMyMaintenanceRequest",
+        "summary": "Tạo yêu cầu bảo trì cho thiết bị đang được giao",
+        "x-required-roles": ["employee"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceRequestCreate" } } } },
+        "responses": { "201": { "description": "Yêu cầu đã tạo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceRequest" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/me/maintenance-requests/{id}/cancel": {
+      "post": {
+        "tags": ["Maintenance requests"],
+        "operationId": "cancelMyMaintenanceRequest",
+        "summary": "Hủy yêu cầu bảo trì đang chờ của bản thân",
+        "x-required-roles": ["employee"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "responses": { "200": { "description": "Yêu cầu đã hủy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceRequest" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/maintenance-requests": {
+      "get": {
+        "tags": ["Maintenance requests"],
+        "operationId": "listMaintenanceRequests",
+        "summary": "Danh sách yêu cầu bảo trì cho Admin và IT Manager",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "in_progress", "completed", "rejected", "cancelled"] } },
+          { "name": "priority", "in": "query", "schema": { "type": "string", "enum": ["normal", "high", "urgent"] } },
+          { "name": "category", "in": "query", "schema": { "type": "string", "enum": ["hardware", "software", "network", "accessory", "other"] } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Danh sách yêu cầu bảo trì", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceRequestList" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
+    },
+    "/api/v1/maintenance-requests/{id}/accept": {
+      "post": {
+        "tags": ["Maintenance requests"],
+        "operationId": "acceptMaintenanceRequest",
+        "summary": "Tiếp nhận yêu cầu bảo trì",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "responses": { "200": { "description": "Yêu cầu đã được tiếp nhận", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceRequest" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/maintenance-requests/{id}/complete": {
+      "post": {
+        "tags": ["Maintenance requests"],
+        "operationId": "completeMaintenanceRequest",
+        "summary": "Hoàn thành yêu cầu bảo trì",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceResponseNote" } } } },
+        "responses": { "200": { "description": "Yêu cầu đã hoàn thành", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceRequest" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
+      }
+    },
+    "/api/v1/maintenance-requests/{id}/reject": {
+      "post": {
+        "tags": ["Maintenance requests"],
+        "operationId": "rejectMaintenanceRequest",
+        "summary": "Từ chối yêu cầu bảo trì",
+        "x-required-roles": ["admin", "it_manager"],
+        "parameters": [{ "$ref": "#/components/parameters/EntityID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceResponseNote" } } } },
+        "responses": { "200": { "description": "Yêu cầu đã từ chối", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaintenanceRequest" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } }
       }
     },
     "/api/v1/me/notifications": {
@@ -709,13 +784,40 @@
       "LicenseRequestCreate": { "type": "object", "required": ["software_product_id", "priority", "reason"], "properties": { "software_product_id": { "type": "string", "format": "uuid" }, "priority": { "type": "string", "enum": ["normal", "high", "urgent"] }, "reason": { "type": "string" } } },
       "LicenseRequestApprove": { "type": "object", "required": ["license_id"], "properties": { "license_id": { "type": "string", "format": "uuid" }, "response_note": { "type": "string" } } },
       "LicenseRequestReject": { "type": "object", "required": ["decision_reason", "response_note"], "properties": { "decision_reason": { "type": "string", "enum": ["out_of_stock", "not_approved", "other"] }, "response_note": { "type": "string" } } },
+      "MaintenanceRequest": {
+        "type": "object",
+        "required": ["id", "requester_id", "requester_name", "device_id", "device_asset_code", "device_name", "device_type", "category", "priority", "title", "description", "status", "last_actor_id", "last_actor_name", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" }, "requester_id": { "type": "string", "format": "uuid" }, "requester_name": { "type": "string" },
+          "device_id": { "type": "string", "format": "uuid" }, "device_asset_code": { "type": "string" }, "device_serial_number": { "type": "string" },
+          "device_name": { "type": "string" }, "device_type": { "type": "string" }, "device_manufacturer": { "type": "string" }, "device_model": { "type": "string" },
+          "device_purchased_at": { "type": "string", "format": "date" }, "device_warranty_expires_at": { "type": "string", "format": "date" },
+          "category": { "type": "string", "enum": ["hardware", "software", "network", "accessory", "other"] },
+          "priority": { "type": "string", "enum": ["normal", "high", "urgent"] }, "title": { "type": "string", "maxLength": 200 }, "description": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "rejected", "cancelled"] },
+          "assigned_to": { "type": "string", "format": "uuid" }, "assigned_to_name": { "type": "string" },
+          "last_actor_id": { "type": "string", "format": "uuid" }, "last_actor_name": { "type": "string" }, "response_note": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" },
+          "accepted_at": { "type": "string", "format": "date-time" }, "completed_at": { "type": "string", "format": "date-time" },
+          "rejected_at": { "type": "string", "format": "date-time" }, "cancelled_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "MaintenanceRequestCreate": {
+        "type": "object",
+        "required": ["device_id", "category", "priority", "title", "description"],
+        "properties": {
+          "device_id": { "type": "string", "format": "uuid" }, "category": { "type": "string", "enum": ["hardware", "software", "network", "accessory", "other"] },
+          "priority": { "type": "string", "enum": ["normal", "high", "urgent"] }, "title": { "type": "string", "maxLength": 200 }, "description": { "type": "string" }
+        }
+      },
+      "MaintenanceResponseNote": { "type": "object", "required": ["response_note"], "properties": { "response_note": { "type": "string" } } },
       "Notification": {
         "type": "object",
         "required": ["id", "user_id", "type", "title", "message", "entity_type", "entity_id", "created_at"],
         "properties": {
           "id": { "type": "string", "format": "uuid" }, "user_id": { "type": "string", "format": "uuid" },
-          "type": { "type": "string", "enum": ["license_request_approved", "license_request_rejected"] },
-          "title": { "type": "string" }, "message": { "type": "string" }, "entity_type": { "type": "string", "enum": ["license_request"] }, "entity_id": { "type": "string", "format": "uuid" },
+          "type": { "type": "string", "enum": ["license_request_approved", "license_request_rejected", "maintenance_accepted", "maintenance_completed", "maintenance_rejected"] },
+          "title": { "type": "string" }, "message": { "type": "string" }, "entity_type": { "type": "string", "enum": ["license_request", "maintenance_request"] }, "entity_id": { "type": "string", "format": "uuid" },
           "created_at": { "type": "string", "format": "date-time" }, "read_at": { "type": "string", "format": "date-time" }
         }
       },
@@ -728,6 +830,7 @@
       "AuditLogList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/AuditLog" } } } }] },
       "AssignedLicenseList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/AssignedLicense" } } } }] },
       "LicenseRequestList": { "allOf": [{ "$ref": "#/components/schemas/ListEnvelope" }, { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/LicenseRequest" } } } }] },
+      "MaintenanceRequestList": { "type": "object", "required": ["items", "total"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/MaintenanceRequest" } }, "total": { "type": "integer", "minimum": 0 }, "open_count": { "type": "integer", "minimum": 0 } } },
       "NotificationList": { "type": "object", "required": ["items", "total", "unread_count"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Notification" } }, "total": { "type": "integer", "minimum": 0 }, "unread_count": { "type": "integer", "minimum": 0 } } },
       "LicenseAlertList": {
         "type": "object",

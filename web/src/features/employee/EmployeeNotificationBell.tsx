@@ -93,13 +93,19 @@ export function EmployeeNotificationBell({ accessToken, onSessionExpired }: Empl
       {error && <p className="employee-notification-error" role="alert">{error}</p>}
       {isLoading ? <div className="employee-notification-loading"><span /><span /></div> : items.length ? <div className="employee-notification-list">
         {items.map((item) => <button className={item.read_at ? '' : 'unread'} type="button" key={item.id} onClick={() => void openNotification(item)} disabled={actionID === item.id}>
-          <span className="employee-notification-icon"><Icon name={item.type === 'license_request_approved' ? 'check' : 'alert'} /></span>
+          <span className="employee-notification-icon"><Icon name={notificationIcon(item)} /></span>
           <span><strong>{item.title}</strong><p>{item.message}</p><small>{formatNotificationTime(item.created_at)}</small></span>
           {!item.read_at && <i aria-label="Chưa đọc" />}
         </button>)}
       </div> : <div className="employee-notification-empty"><Icon name="bell" /><strong>Chưa có thông báo</strong><p>Phản hồi từ bộ phận IT sẽ xuất hiện tại đây.</p></div>}
     </section>}
   </div>
+}
+
+function notificationIcon(item: WebsiteNotification): 'check' | 'settings' | 'alert' {
+  if (item.type === 'license_request_approved' || item.type === 'maintenance_completed') return 'check'
+  if (item.type === 'maintenance_accepted') return 'settings'
+  return 'alert'
 }
 
 function formatNotificationTime(value: string) {

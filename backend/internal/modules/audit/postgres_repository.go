@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"license-manager/backend/internal/platform/database"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -53,7 +54,7 @@ func (r *PostgresRepository) Create(ctx context.Context, item Log) (Log, error) 
 	if err != nil {
 		return Log{}, fmt.Errorf("encode audit metadata: %w", err)
 	}
-	_, err = r.pool.Exec(ctx, `
+	_, err = database.Querier(ctx, r.pool).Exec(ctx, `
 		INSERT INTO audit_logs (id, actor_id, action, entity_type, entity_id, metadata, ip_address, created_at)
 		VALUES ($1, NULLIF($2, '')::uuid, $3, $4, NULLIF($5, '')::uuid, $6, NULLIF($7, '')::inet, $8)`,
 		item.ID, item.ActorID, item.Action, item.EntityType, item.EntityID, metadata, item.IPAddress, item.CreatedAt)

@@ -17,14 +17,17 @@ const (
 	ActionCancel       = "cancel"
 	ActionApprove      = "approve"
 	ActionReject       = "reject"
+	ActionAccept       = "accept"
+	ActionComplete     = "complete"
 
-	EntityUser           = "user"
-	EntityDepartment     = "department"
-	EntitySoftware       = "software_product"
-	EntityLicense        = "license"
-	EntityDevice         = "device"
-	EntityAssignment     = "license_assignment"
-	EntityLicenseRequest = "license_request"
+	EntityUser               = "user"
+	EntityDepartment         = "department"
+	EntitySoftware           = "software_product"
+	EntityLicense            = "license"
+	EntityDevice             = "device"
+	EntityAssignment         = "license_assignment"
+	EntityLicenseRequest     = "license_request"
+	EntityMaintenanceRequest = "maintenance_request"
 )
 
 type Log struct {
