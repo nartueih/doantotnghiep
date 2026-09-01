@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "node --test --experimental-strip-types src/features/requests/request-view-model.test.ts src/features/maintenance/maintenance-view-model.test.ts src/features/dashboard/dashboard-view-model.test.ts src/components/software/software-category.test.ts",
+    "test": "node --test --experimental-strip-types src/features/requests/request-view-model.test.ts src/features/maintenance/maintenance-view-model.test.ts src/features/dashboard/dashboard-view-model.test.ts src/components/software/software-category.test.ts src/components/layout/admin-request-badges.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

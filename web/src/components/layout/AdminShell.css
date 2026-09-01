@@ -14,6 +14,8 @@
 .admin-nav-item.disabled:hover { color: #637187; background: transparent; }
 .admin-nav-item svg { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
 .admin-nav-item small { margin-left: auto; color: #bbc2cc; font-size: 10px; font-weight: 700; }
+.admin-nav-badge { min-width: 20px; height: 20px; box-sizing: border-box; margin-left: auto; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #fff; border-radius: 999px; color: #fff; background: #dc3545; box-shadow: 0 3px 8px rgba(180, 35, 50, 0.2); font-size: 10px; font-weight: 850; line-height: 1; }
+.admin-nav-item.active .admin-nav-badge { border-color: #edf5ff; }
 .admin-nav-item.active { color: #0d61ce; background: #edf5ff; font-weight: 750; }
 .admin-account { padding: 15px 8px 2px; display: flex; align-items: center; gap: 9px; border-top: 1px solid #edf0f4; }
 .admin-avatar { width: 32px; height: 32px; display: grid; flex: 0 0 auto; place-items: center; border-radius: 9px; color: #fff; background: #173e70; font-size: 12px; font-weight: 800; }
