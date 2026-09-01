@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AdminShell, Icon, type AdminPage } from '../../components/layout/AdminShell'
+import { notifyAdminRequestBadgesChanged } from '../../components/layout/use-admin-request-badges'
 import type { AuthSession } from '../../lib/auth-api'
 import { getLicenses, type LicenseItem } from '../../lib/license-api'
 import { isNoAvailableSeatsConflict, normalizeAPIError } from '../../lib/api-error'
@@ -120,6 +121,7 @@ export function LicenseRequestManagementScreen({ session, onNavigate, onLogout }
       setApproveDialog(null)
       setSuccessMessage(`Đã duyệt ${approved.software_product_name} cho ${approved.requester_name}.`)
       setReloadKey((value) => value + 1)
+      notifyAdminRequestBadgesChanged()
     } catch (caughtError) {
       const normalized = normalizeAPIError(caughtError, 'Không thể duyệt yêu cầu.')
       if (normalized.status === 401) {
@@ -147,6 +149,7 @@ export function LicenseRequestManagementScreen({ session, onNavigate, onLogout }
       setRejectDialog(null)
       setSuccessMessage(`Đã gửi phản hồi cho ${rejected.requester_name}.`)
       setReloadKey((value) => value + 1)
+      notifyAdminRequestBadgesChanged()
     } catch (caughtError) {
       const normalized = normalizeAPIError(caughtError, 'Không thể từ chối yêu cầu.')
       if (normalized.status === 401) {

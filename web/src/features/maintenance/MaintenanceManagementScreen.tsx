@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AdminShell, Icon, type AdminPage } from '../../components/layout/AdminShell'
+import { notifyAdminRequestBadgesChanged } from '../../components/layout/use-admin-request-badges'
 import type { AuthSession } from '../../lib/auth-api'
 import {
   acceptMaintenanceRequest,
@@ -74,6 +75,7 @@ export function MaintenanceManagementScreen({ session, onNavigate, onLogout }: P
     try {
       await acceptMaintenanceRequest(session.tokens.access_token, item.id)
       await load()
+      notifyAdminRequestBadgesChanged()
     } catch (caught) {
       setError(caught instanceof MaintenanceAPIError ? caught : new MaintenanceAPIError('Không thể tiếp nhận yêu cầu.', 0))
     } finally {
@@ -90,6 +92,7 @@ export function MaintenanceManagementScreen({ session, onNavigate, onLogout }: P
       else await rejectMaintenanceRequest(session.tokens.access_token, current.item.id, current.note.trim())
       setDialog(null)
       await load()
+      notifyAdminRequestBadgesChanged()
     } catch (caught) {
       if (caught instanceof MaintenanceAPIError && caught.status === 401) {
         setDialog(null)

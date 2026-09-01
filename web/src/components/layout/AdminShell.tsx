@@ -1,5 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthSession, UserRole } from '../../lib/auth-api'
+import { formatAdminRequestBadge } from './admin-request-badges'
+import { useAdminRequestBadges } from './use-admin-request-badges'
 import './AdminShell.css'
 
 export type AdminPage = 'dashboard' | 'software' | 'licenses' | 'assignments' | 'requests' | 'maintenance' | 'devices' | 'users' | 'departments' | 'audit'
@@ -38,6 +40,11 @@ const navigation: Array<{ label: string; icon: IconName; page?: AdminPage }> = [
 
 export function AdminShell({ session, activePage, title, onNavigate, onLogout, actions, children }: AdminShellProps) {
   const [isNavOpen, setIsNavOpen] = useState(false)
+  const requestBadges = useAdminRequestBadges(session.tokens.access_token)
+  const badgesByPage: Partial<Record<AdminPage, number>> = {
+    requests: requestBadges.licenseRequests,
+    maintenance: requestBadges.maintenanceRequests,
+  }
   const initials = useMemo(() => session.user.full_name
     .split(' ')
     .filter(Boolean)
@@ -62,11 +69,11 @@ export function AdminShell({ session, activePage, title, onNavigate, onLogout, a
         <nav aria-label="Điều hướng chính">
           <span className="admin-nav-label">Quản lý</span>
           {navigation.slice(0, 7).map((item) => (
-            <NavItem key={item.label} item={item} activePage={activePage} onNavigate={navigate} />
+            <NavItem key={item.label} item={item} activePage={activePage} badgeCount={item.page ? badgesByPage[item.page] : undefined} onNavigate={navigate} />
           ))}
           <span className="admin-nav-label second">Hệ thống</span>
           {navigation.slice(7).map((item) => (
-            <NavItem key={item.label} item={item} activePage={activePage} onNavigate={navigate} />
+            <NavItem key={item.label} item={item} activePage={activePage} badgeCount={item.page ? badgesByPage[item.page] : undefined} onNavigate={navigate} />
           ))}
         </nav>
 
@@ -98,9 +105,10 @@ export function AdminShell({ session, activePage, title, onNavigate, onLogout, a
   )
 }
 
-function NavItem({ item, activePage, onNavigate }: {
+function NavItem({ item, activePage, badgeCount, onNavigate }: {
   item: { label: string; icon: IconName; page?: AdminPage }
   activePage: AdminPage
+  badgeCount?: number
   onNavigate: (page: AdminPage) => void
 }) {
   const active = item.page === activePage
@@ -115,6 +123,11 @@ function NavItem({ item, activePage, onNavigate }: {
       onClick={() => onNavigate(item.page!)}
     >
       <Icon name={item.icon} />{item.label}
+      {badgeCount !== undefined && badgeCount > 0 && (
+        <span className="admin-nav-badge" aria-label={`${badgeCount} yêu cầu mới`}>
+          {formatAdminRequestBadge(badgeCount)}
+        </span>
+      )}
     </button>
   )
 }
