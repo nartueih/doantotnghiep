@@ -60,7 +60,7 @@ $env:SEED_DEMO_DATA = "true"
 
 `JWT_SECRET` phải có ít nhất 32 ký tự. Tất cả giá trị trong phần này chỉ dùng cho môi trường phát triển.
 
-Khi `STORAGE_DRIVER=memory` và `SEED_DEMO_DATA=true`, backend tự tạo dữ liệu minh họa cho dashboard gồm phòng ban, người dùng, phần mềm, license, thiết bị và cấp phát. Đặt `SEED_DEMO_DATA=false` nếu cần một memory storage trống. Seed không chạy với PostgreSQL.
+Khi `STORAGE_DRIVER=memory` và `SEED_DEMO_DATA=true`, backend tự tạo dữ liệu minh họa cho dashboard gồm phòng ban, người dùng, phần mềm, license, thiết bị và cấp phát. Đặt `SEED_DEMO_DATA=false` nếu cần một memory storage trống. Backend không tự seed khi dùng PostgreSQL; hãy chạy `go run ./cmd/seed` theo [hướng dẫn PostgreSQL local](postgresql-local-setup.md).
 
 ## Bước 5: chạy backend
 

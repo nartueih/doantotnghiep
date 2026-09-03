@@ -66,6 +66,6 @@ Các rào chắn cần kiểm tra:
 
 ## 6. Kiểm tra liên kết license thiết bị
 
-Thiết bị demo `LT-001`, `LT-002`, `WS-001` và `MB-001` đang có Windows 11 Pro Volume. Tên license phải xuất hiện tại cột **License thiết bị**.
+Thiết bị demo `DEMO-LT-001`, `DEMO-LT-002`, `DEMO-WS-001` và `DEMO-MB-001` đang có Windows 11 Pro Volume. Tên license phải xuất hiện tại cột **License thiết bị**.
 
 Khi thiết bị có nhiều license, bảng hiển thị license đầu tiên và số license còn lại. Việc bàn giao hoặc thu hồi thiết bị khỏi người dùng không tự động thu hồi license cấp trực tiếp cho thiết bị; thao tác đó được thực hiện tại trang **Cấp phát**.

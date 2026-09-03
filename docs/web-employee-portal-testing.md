@@ -54,7 +54,7 @@ Với dữ liệu demo của Nguyễn Hoàng Anh, xác nhận:
 
 Thiết bị demo mong đợi:
 
-- Mã tài sản `LT-001`.
+- Mã tài sản `DEMO-LT-001`.
 - Tên `Laptop Dell Latitude`.
 - Hãng Dell và model Latitude 7450.
 - Trạng thái đang sử dụng.
@@ -67,7 +67,7 @@ Nhấn nút làm mới ở tiêu đề khu vực và xác nhận dữ liệu v�
 Xác nhận:
 
 - Microsoft 365 hiển thị nguồn **Cấp trực tiếp cho bạn**.
-- Windows 11 hiển thị nguồn **Theo thiết bị LT-001**.
+- Windows 11 hiển thị nguồn **Theo thiết bị DEMO-LT-001**.
 - License thuê bao hiển thị ngày hết hạn.
 - License vĩnh viễn không yêu cầu ngày hết hạn.
 - Ghi chú của cấp phát được hiển thị.

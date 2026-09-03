@@ -82,7 +82,7 @@ go run ./cmd/migrate status
 $env:DATABASE_URL = $mainDatabaseURL
 ```
 
-Cả hai lệnh `status` phải hiển thị version `001` đến `004` ở trạng thái `applied`.
+Cả hai lệnh `status` phải hiển thị version `001` đến `005` ở trạng thái `applied`.
 
 ## 5. Tạo Admin ban đầu
 
@@ -93,6 +93,16 @@ go run ./cmd/seed
 ```
 
 Chạy lại lệnh seed phải báo `already exists`; lệnh không tạo trùng và không đổi mật khẩu đã lưu.
+
+Để tạo thêm bộ dữ liệu demo PostgreSQL gồm 3 phòng ban, 5 người dùng, 6 phần mềm, 6 license, 6 thiết bị và 14 lượt cấp phát:
+
+```powershell
+$env:SEED_DEMO_DATA = "true"
+$env:LICENSE_ENCRYPTION_KEY = "BASE64_KEY_32_BYTE_DANG_DUNG_CHO_BACKEND"
+go run ./cmd/seed
+```
+
+Lệnh không xóa dữ liệu hiện có. Nếu lần chạy trước bị dừng giữa chừng hoặc bộ demo đã tồn tại, lệnh sử dụng lại các bản ghi demo và chỉ bổ sung phần còn thiếu. Các tài khoản demo dùng chung mật khẩu `ChangeMe123!`.
 
 ## 6. Khởi động backend
 

@@ -27,7 +27,7 @@ Mở địa chỉ Vite hiển thị, thường là `http://localhost:5173`.
 
 1. Đăng nhập `anh.nguyen@local.test` / `ChangeMe123!`.
 2. Cuộn tới **Yêu cầu bảo trì**, nhấn **Báo sự cố**.
-3. Chọn thiết bị `LT-001 · Laptop Dell Latitude`.
+3. Chọn thiết bị `DEMO-LT-001 · Laptop Dell Latitude`.
 4. Kiểm tra form hiển thị serial, loại thiết bị, hãng/model và hạn bảo hành.
 5. Chọn nhóm **Phần cứng**, ưu tiên **Cao**.
 6. Nhập tiêu đề `Bàn phím không nhận phím` và mô tả chi tiết rồi gửi.
@@ -35,7 +35,7 @@ Mở địa chỉ Vite hiển thị, thường là `http://localhost:5173`.
 Kết quả đúng:
 
 - Yêu cầu mới có trạng thái **Chờ tiếp nhận**.
-- Thẻ thiết bị `LT-001` có nhãn **Có yêu cầu bảo trì**.
+- Thẻ thiết bị `DEMO-LT-001` có nhãn **Có yêu cầu bảo trì**.
 - Tạo thêm yêu cầu cho cùng thiết bị bị chặn vì chỉ được có một yêu cầu đang mở.
 - Không xuất hiện nút quản trị trên portal nhân viên.
 
@@ -43,7 +43,7 @@ Kết quả đúng:
 
 1. Đăng xuất và đăng nhập `admin@local.test` / `ChangeMe123!` hoặc `it.manager@local.test` / `ChangeMe123!`.
 2. Chọn menu **Bảo trì**.
-3. Tìm bằng `LT-001`, serial hoặc tên nhân viên.
+3. Tìm bằng `DEMO-LT-001`, serial hoặc tên nhân viên.
 4. Xác nhận thẻ yêu cầu hiển thị đủ snapshot thiết bị và nội dung sự cố.
 5. Nhấn **Tiếp nhận**.
 

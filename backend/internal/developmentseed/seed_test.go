@@ -29,6 +29,7 @@ func TestSeedCreatesMeaningfulEncryptedDashboardScenario(t *testing.T) {
 	licenseRepository := licenses.NewMemoryRepository()
 	deviceRepository := devices.NewMemoryRepository()
 	assignmentRepository := assignments.NewMemoryRepository(licenseRepository)
+	deviceService := devices.NewService(deviceRepository, authRepository)
 	cipher, err := securevalue.NewCipher("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
 	if err != nil {
 		t.Fatalf("create cipher: %v", err)
@@ -39,8 +40,14 @@ func TestSeedCreatesMeaningfulEncryptedDashboardScenario(t *testing.T) {
 		Users:       users.NewService(authRepository, auth.NewPasswordHasher(4), departmentRepository),
 		Software:    software.NewService(softwareRepository),
 		Licenses:    licenses.NewService(licenseRepository, softwareRepository, cipher),
-		Devices:     devices.NewService(deviceRepository, authRepository),
+		Devices:     deviceService,
 		Assignments: assignments.NewService(assignmentRepository, licenseRepository, authRepository, deviceRepository),
+	}
+	if _, err := deviceService.Create(ctx, devices.Input{
+		AssetCode: "LT-001", SerialNumber: "REAL-LT-001", Name: "Existing company laptop",
+		DeviceType: "laptop", Manufacturer: "Dell", Model: "Latitude 7420",
+	}); err != nil {
+		t.Fatalf("create pre-existing non-demo device: %v", err)
 	}
 
 	result, err := Seed(ctx, services, adminID, time.Now().UTC())
@@ -55,7 +62,7 @@ func TestSeedCreatesMeaningfulEncryptedDashboardScenario(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load dashboard summary: %v", err)
 	}
-	if summary.TotalSoftwareProducts != 6 || summary.TotalLicenses != 6 || summary.TotalDevices != 6 {
+	if summary.TotalSoftwareProducts != 6 || summary.TotalLicenses != 6 || summary.TotalDevices != 7 {
 		t.Fatalf("unexpected totals: %+v", summary)
 	}
 	if summary.TotalSeats != 32 || summary.UsedSeats != 14 || summary.AvailableSeats != 18 {
@@ -67,7 +74,7 @@ func TestSeedCreatesMeaningfulEncryptedDashboardScenario(t *testing.T) {
 	if summary.ExhaustedLicenses != 1 || summary.HighUsageLicenses != 1 {
 		t.Fatalf("unexpected usage alerts: %+v", summary)
 	}
-	if summary.DevicesByStatus[devices.StatusAvailable] != 2 ||
+	if summary.DevicesByStatus[devices.StatusAvailable] != 3 ||
 		summary.DevicesByStatus[devices.StatusAssigned] != 2 ||
 		summary.DevicesByStatus[devices.StatusMaintenance] != 1 ||
 		summary.DevicesByStatus[devices.StatusRetired] != 1 {
@@ -93,5 +100,20 @@ func TestSeedCreatesMeaningfulEncryptedDashboardScenario(t *testing.T) {
 		if bytes.Contains(item.EncryptedKey, []byte("DEMO-")) {
 			t.Fatalf("license %q contains a plaintext demo key", item.Name)
 		}
+	}
+
+	secondResult, err := Seed(ctx, services, adminID, time.Now().UTC())
+	if err != nil {
+		t.Fatalf("rerun demo seed: %v", err)
+	}
+	if secondResult != result {
+		t.Fatalf("rerun result=%+v, want %+v", secondResult, result)
+	}
+	afterRerun, err := dashboard.NewService(licenseRepository, deviceRepository, softwareRepository).Summary(ctx)
+	if err != nil {
+		t.Fatalf("load dashboard after rerun: %v", err)
+	}
+	if afterRerun.TotalSoftwareProducts != 6 || afterRerun.TotalLicenses != 6 || afterRerun.TotalDevices != 7 || afterRerun.UsedSeats != 14 {
+		t.Fatalf("seed rerun created duplicates: %+v", afterRerun)
 	}
 }

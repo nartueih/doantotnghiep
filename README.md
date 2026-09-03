@@ -84,6 +84,8 @@ go run ./cmd/seed
 go run ./cmd/api
 ```
 
+Để thêm bộ dữ liệu minh họa vào PostgreSQL, đặt `SEED_DEMO_DATA=true` và `LICENSE_ENCRYPTION_KEY` trước khi chạy `go run ./cmd/seed`. Lệnh có thể chạy lặp lại và tự bổ sung phần dữ liệu demo còn thiếu.
+
 File `backend/.env.example` là mẫu cấu hình để IDE, Docker hoặc công cụ quản lý môi trường sử dụng; ứng dụng chỉ đọc biến môi trường và không tự động nạp file `.env`.
 
 Kiểm tra API:
