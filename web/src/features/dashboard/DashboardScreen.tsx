@@ -339,7 +339,7 @@ function DashboardError({ error, onRetry, onLogout }: {
     : forbidden
       ? 'Dashboard chỉ dành cho Quản trị viên và Quản lý IT.'
       : error.status === 0
-        ? 'Hãy kiểm tra backend đang chạy ở cổng 8081 rồi thử lại.'
+        ? 'Hãy kiểm tra backend đang chạy ở cổng 8080 rồi thử lại.'
         : error.message
 
   return (

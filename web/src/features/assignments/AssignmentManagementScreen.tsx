@@ -285,7 +285,7 @@ function AssignmentRow({ assignment, onRevoke }: { assignment: AssignmentItem; o
 
 function AssignmentError({ error, onRetry, onLogout }: { error: AssignmentAPIError; onRetry: () => void; onLogout: () => Promise<void> }) {
   const authError = error.status === 401 || error.status === 403
-  return <div className="assignment-error"><Icon name="alert" /><strong>{authError ? 'Không thể truy cập' : 'Không thể tải cấp phát'}</strong><p>{error.status === 401 ? 'Phiên đăng nhập đã hết hạn.' : error.status === 403 ? 'Tài khoản không có quyền quản lý cấp phát.' : error.status === 0 ? 'Hãy kiểm tra backend đang chạy ở cổng 8081.' : error.message}</p><button type="button" onClick={authError ? onLogout : onRetry}>{authError ? 'Đăng nhập lại' : 'Thử lại'}</button></div>
+  return <div className="assignment-error"><Icon name="alert" /><strong>{authError ? 'Không thể truy cập' : 'Không thể tải cấp phát'}</strong><p>{error.status === 401 ? 'Phiên đăng nhập đã hết hạn.' : error.status === 403 ? 'Tài khoản không có quyền quản lý cấp phát.' : error.status === 0 ? 'Hãy kiểm tra backend đang chạy ở cổng 8080.' : error.message}</p><button type="button" onClick={authError ? onLogout : onRetry}>{authError ? 'Đăng nhập lại' : 'Thử lại'}</button></div>
 }
 
 function matchesFilter(item: AssignmentItem, filter: AssignmentFilter): boolean {

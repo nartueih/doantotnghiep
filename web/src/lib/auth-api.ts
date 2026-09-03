@@ -59,7 +59,7 @@ export async function login(email: string, password: string): Promise<AuthSessio
       body: JSON.stringify({ email, password }),
     })
   } catch {
-    throw new APIError('Không thể kết nối tới backend. Hãy kiểm tra API đang chạy ở cổng 8081.', 0)
+    throw new APIError('Không thể kết nối tới backend. Hãy kiểm tra API đang chạy ở cổng 8080.', 0)
   }
 
   if (!response.ok) {

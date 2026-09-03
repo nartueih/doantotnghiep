@@ -4,7 +4,7 @@ Web quản trị cho hệ thống Enterprise License Manager, xây dựng bằng
 
 ## Chạy ở môi trường development
 
-Backend cần chạy tại `http://localhost:8081`. Sau đó mở terminal khác:
+Backend cần chạy tại `http://localhost:8080`. Sau đó mở terminal khác:
 
 ```powershell
 Set-Location web
